@@ -45,7 +45,7 @@ public class User implements UserDetails {
     private boolean active = true;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "integer default 0")
     private int failedLoginAttempts = 0;
 
     @Column(nullable = false, updatable = false)

@@ -1,5 +1,7 @@
 package com.finguard.finguard_api.loan;
 
+import com.finguard.finguard_api.ai.CreditRiskService;
+import com.finguard.finguard_api.ai.RiskAssessmentResponse;
 import com.finguard.finguard_api.audit.AuditLogService;
 import com.finguard.finguard_api.loan.dto.CreateLoanRequest;
 import com.finguard.finguard_api.loan.dto.LoanResponse;
@@ -17,6 +19,7 @@ public class LoanService {
 
     private final LoanRepository loanRepository;
     private final AuditLogService auditLogService;
+    private final CreditRiskService creditRiskService;
 
     @Transactional
     public LoanResponse submitLoan(CreateLoanRequest request, User loanOfficer) {
@@ -32,6 +35,11 @@ public class LoanService {
                 .submittedBy(loanOfficer)
                 .build();
 
+        RiskAssessmentResponse risk = creditRiskService.assessRisk(loan);
+        loan.setAiRiskScore(risk.riskScore());
+        loan.setAiRiskLevel(risk.riskLevel());
+        loan.setAiRecommendation(risk.recommendation());
+
         LoanApplication saved = loanRepository.save(loan);
 
         auditLogService.record(
@@ -39,7 +47,9 @@ public class LoanService {
                 "LOAN_APPLICATION",
                 saved.getId(),
                 loanOfficer,
-                "Submitted loan for " + saved.getBorrowerName() + " amounting to " + saved.getRequestedAmount()
+                "Submitted loan for " + saved.getBorrowerName()
+                        + " (Amount: " + saved.getRequestedAmount()
+                        + ", AI Risk: " + saved.getAiRiskLevel() + " [" + saved.getAiRiskScore() + "])"
         );
 
         return LoanResponse.from(saved);
