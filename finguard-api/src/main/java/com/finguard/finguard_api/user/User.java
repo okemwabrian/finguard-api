@@ -44,6 +44,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private int failedLoginAttempts = 0;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

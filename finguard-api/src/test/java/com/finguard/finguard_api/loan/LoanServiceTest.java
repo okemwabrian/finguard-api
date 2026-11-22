@@ -1,0 +1,111 @@
+package com.finguard.finguard_api.loan;
+
+import com.finguard.finguard_api.audit.AuditLogService;
+import com.finguard.finguard_api.loan.dto.LoanResponse;
+import com.finguard.finguard_api.loan.dto.ReviewLoanRequest;
+import com.finguard.finguard_api.user.Role;
+import com.finguard.finguard_api.user.User;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class LoanServiceTest {
+
+    @Mock
+    private LoanRepository loanRepository;
+
+    @Mock
+    private AuditLogService auditLogService;
+
+    @InjectMocks
+    private LoanService loanService;
+
+    private User loanOfficer;
+    private User creditAnalyst;
+    private LoanApplication pendingLoan;
+
+    @BeforeEach
+    void setUp() {
+        loanOfficer = User.builder()
+                .id(1L)
+                .email("jane@finguard.com")
+                .role(Role.LOAN_OFFICER)
+                .build();
+
+        creditAnalyst = User.builder()
+                .id(2L)
+                .email("analyst@finguard.com")
+                .role(Role.CREDIT_ANALYST)
+                .build();
+
+        pendingLoan = LoanApplication.builder()
+                .id(10L)
+                .borrowerName("John Kamau")
+                .borrowerNationalId("32456789")
+                .monthlyIncome(new BigDecimal("85000.00"))
+                .existingMonthlyDebt(new BigDecimal("15000.00"))
+                .requestedAmount(new BigDecimal("250000.00"))
+                .repaymentMonths(12)
+                .purpose("Expand hardware shop")
+                .status(LoanStatus.PENDING)
+                .submittedBy(loanOfficer)
+                .build();
+    }
+
+    @Test
+    void shouldTransitionFromPendingToUnderReview() {
+        when(loanRepository.findById(10L)).thenReturn(Optional.of(pendingLoan));
+        when(loanRepository.save(any(LoanApplication.class))).thenAnswer(i -> i.getArgument(0));
+
+        ReviewLoanRequest request = new ReviewLoanRequest(LoanStatus.UNDER_REVIEW, "Checking financials");
+        LoanResponse response = loanService.updateLoanStatus(10L, request, creditAnalyst);
+
+        assertEquals(LoanStatus.UNDER_REVIEW, response.status());
+        assertEquals("analyst@finguard.com", response.reviewedByEmail());
+        verify(auditLogService, times(1))
+                .record(eq("LOAN_UNDER_REVIEW"), eq("LOAN_APPLICATION"), eq(10L), eq(creditAnalyst), anyString());
+    }
+
+    @Test
+    void shouldBlockInvalidJumpFromPendingToApproved() {
+        when(loanRepository.findById(10L)).thenReturn(Optional.of(pendingLoan));
+
+        ReviewLoanRequest request = new ReviewLoanRequest(LoanStatus.APPROVED, "Skipping review");
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> loanService.updateLoanStatus(10L, request, creditAnalyst)
+        );
+
+        assertTrue(ex.getMessage().contains("Invalid status transition"));
+        verify(loanRepository, never()).save(any());
+        verify(auditLogService, never()).record(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void shouldBlockSeparationOfDutiesViolation() {
+        when(loanRepository.findById(10L)).thenReturn(Optional.of(pendingLoan));
+
+        ReviewLoanRequest request = new ReviewLoanRequest(LoanStatus.UNDER_REVIEW, "Reviewing my own loan");
+
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> loanService.updateLoanStatus(10L, request, loanOfficer)
+        );
+
+        assertTrue(ex.getMessage().contains("Separation of duties violation"));
+        verify(loanRepository, never()).save(any());
+    }
+}
