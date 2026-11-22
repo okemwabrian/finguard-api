@@ -31,8 +31,8 @@ public class CreditRiskService {
 
     public CreditRiskService(ObjectMapper objectMapper) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
-        requestFactory.setReadTimeout(Duration.ofSeconds(15));
+        requestFactory.setConnectTimeout(Duration.ofSeconds(3));
+        requestFactory.setReadTimeout(Duration.ofSeconds(5));
 
         this.restClient = RestClient.builder()
                 .requestFactory(requestFactory)
@@ -68,7 +68,9 @@ public class CreditRiskService {
                 )),
                 "generationConfig", Map.of(
                         "responseMimeType", "application/json",
-                        "temperature", 0.2
+                        "temperature", 0.2,
+                        "maxOutputTokens", 150,
+                        "thinkingConfig", Map.of("thinkingBudget", 0)
                 )
         );
 

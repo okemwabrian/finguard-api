@@ -8,7 +8,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "loan_applications")
+@Table(name = "loan_applications", indexes = {
+        @Index(name = "idx_loan_status", columnList = "status"),
+        @Index(name = "idx_loan_submitted_by", columnList = "submitted_by_id"),
+        @Index(name = "idx_loan_created_at", columnList = "createdAt")
+})
 @Getter
 @Setter
 @Builder
