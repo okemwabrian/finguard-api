@@ -1,5 +1,5 @@
-# Stage 1: Build the JAR using Maven + JDK 25
-FROM eclipse-temurin:25-jdk-alpine AS build
+# Stage 1: Build the JAR using Maven + JDK 21
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
 
 COPY .mvn/ .mvn
@@ -9,8 +9,8 @@ RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 COPY src ./src
 RUN ./mvnw clean package -DskipTests -B
 
-# Stage 2: Slim JRE 25 runtime (non-root)
-FROM eclipse-temurin:25-jre-alpine
+# Stage 2: Slim JRE 21 runtime (non-root)
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 RUN addgroup -S finguard && adduser -S finguard -G finguard
