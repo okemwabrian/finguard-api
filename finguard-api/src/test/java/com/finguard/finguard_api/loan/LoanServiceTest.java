@@ -1,6 +1,9 @@
 package com.finguard.finguard_api.loan;
 
+import com.finguard.finguard_api.ai.CreditRiskService;
+import com.finguard.finguard_api.ai.RiskAssessmentResponse;
 import com.finguard.finguard_api.audit.AuditLogService;
+import com.finguard.finguard_api.loan.dto.CreateLoanRequest;
 import com.finguard.finguard_api.loan.dto.LoanResponse;
 import com.finguard.finguard_api.loan.dto.ReviewLoanRequest;
 import com.finguard.finguard_api.user.Role;
@@ -11,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -29,10 +33,14 @@ class LoanServiceTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock
+    private CreditRiskService creditRiskService;
+
     @InjectMocks
     private LoanService loanService;
 
     private User loanOfficer;
+    private User otherLoanOfficer;
     private User creditAnalyst;
     private LoanApplication pendingLoan;
 
@@ -41,6 +49,12 @@ class LoanServiceTest {
         loanOfficer = User.builder()
                 .id(1L)
                 .email("jane@finguard.com")
+                .role(Role.LOAN_OFFICER)
+                .build();
+
+        otherLoanOfficer = User.builder()
+                .id(3L)
+                .email("bob@finguard.com")
                 .role(Role.LOAN_OFFICER)
                 .build();
 
@@ -62,6 +76,37 @@ class LoanServiceTest {
                 .status(LoanStatus.PENDING)
                 .submittedBy(loanOfficer)
                 .build();
+    }
+
+    @Test
+    void shouldSubmitLoanWithAiRiskScoreAndAuditLog() {
+        CreateLoanRequest request = new CreateLoanRequest(
+                "John Kamau",
+                "32456789",
+                new BigDecimal("120000.00"),
+                new BigDecimal("15000.00"),
+                new BigDecimal("250000.00"),
+                12,
+                "Expand hardware shop"
+        );
+
+        when(creditRiskService.assessRisk(any(LoanApplication.class)))
+                .thenReturn(new RiskAssessmentResponse(22, "LOW", "Strong income-to-debt ratio."));
+        when(loanRepository.save(any(LoanApplication.class))).thenAnswer(inv -> {
+            LoanApplication saved = inv.getArgument(0);
+            saved.setId(99L);
+            return saved;
+        });
+
+        LoanResponse response = loanService.submitLoan(request, loanOfficer);
+
+        assertEquals(99L, response.id());
+        assertEquals(LoanStatus.PENDING, response.status());
+        assertEquals(22, response.aiRiskScore());
+        assertEquals("LOW", response.aiRiskLevel());
+        assertEquals("Strong income-to-debt ratio.", response.aiRecommendation());
+        verify(auditLogService, times(1))
+                .record(eq("LOAN_CREATED"), eq("LOAN_APPLICATION"), eq(99L), eq(loanOfficer), anyString());
     }
 
     @Test
@@ -107,5 +152,25 @@ class LoanServiceTest {
 
         assertTrue(ex.getMessage().contains("Separation of duties violation"));
         verify(loanRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldBlockIdorWhenLoanOfficerViewsAnotherOfficersLoan() {
+        when(loanRepository.findById(10L)).thenReturn(Optional.of(pendingLoan));
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> loanService.getLoanById(10L, otherLoanOfficer)
+        );
+    }
+
+    @Test
+    void shouldAllowCreditAnalystToViewAnyLoan() {
+        when(loanRepository.findById(10L)).thenReturn(Optional.of(pendingLoan));
+
+        LoanResponse response = loanService.getLoanById(10L, creditAnalyst);
+
+        assertEquals(10L, response.id());
+        assertEquals("John Kamau", response.borrowerName());
     }
 }
