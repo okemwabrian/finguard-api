@@ -1,11 +1,11 @@
 package com.finguard.finguard_api.loan;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-
 public interface LoanRepository extends JpaRepository<LoanApplication, Long> {
-    List<LoanApplication> findByStatusOrderByCreatedAtDesc(LoanStatus status);
-    List<LoanApplication> findBySubmittedByIdOrderByCreatedAtDesc(Long userId);
-    List<LoanApplication> findAllByOrderByCreatedAtDesc();
+    Page<LoanApplication> findByStatusOrderByCreatedAtDesc(LoanStatus status, Pageable pageable);
+    Page<LoanApplication> findBySubmittedByIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+    Page<LoanApplication> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

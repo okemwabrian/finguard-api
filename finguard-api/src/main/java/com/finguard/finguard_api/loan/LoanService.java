@@ -6,12 +6,14 @@ import com.finguard.finguard_api.audit.AuditLogService;
 import com.finguard.finguard_api.loan.dto.CreateLoanRequest;
 import com.finguard.finguard_api.loan.dto.LoanResponse;
 import com.finguard.finguard_api.loan.dto.ReviewLoanRequest;
+import com.finguard.finguard_api.user.Role;
 import com.finguard.finguard_api.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -89,25 +91,30 @@ public class LoanService {
     }
 
     @Transactional(readOnly = true)
-    public List<LoanResponse> getAllLoans(LoanStatus status) {
-        List<LoanApplication> loans = (status != null)
-                ? loanRepository.findByStatusOrderByCreatedAtDesc(status)
-                : loanRepository.findAllByOrderByCreatedAtDesc();
-        return loans.stream().map(LoanResponse::from).toList();
+    public Page<LoanResponse> getAllLoans(LoanStatus status, Pageable pageable) {
+        Page<LoanApplication> loans = (status != null)
+                ? loanRepository.findByStatusOrderByCreatedAtDesc(status, pageable)
+                : loanRepository.findAllByOrderByCreatedAtDesc(pageable);
+        return loans.map(LoanResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public List<LoanResponse> getMySubmittedLoans(User loanOfficer) {
-        return loanRepository.findBySubmittedByIdOrderByCreatedAtDesc(loanOfficer.getId())
-                .stream()
-                .map(LoanResponse::from)
-                .toList();
+    public Page<LoanResponse> getMySubmittedLoans(User loanOfficer, Pageable pageable) {
+        return loanRepository.findBySubmittedByIdOrderByCreatedAtDesc(loanOfficer.getId(), pageable)
+                .map(LoanResponse::from);
     }
 
     @Transactional(readOnly = true)
-    public LoanResponse getLoanById(Long loanId) {
+    public LoanResponse getLoanById(Long loanId, User currentUser) {
         LoanApplication loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanId));
+
+        // IDOR protection: Loan Officers can only view loans they submitted
+        if (currentUser.getRole() == Role.LOAN_OFFICER
+                && !loan.getSubmittedBy().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("You are not authorized to view another officer's loan application.");
+        }
+
         return LoanResponse.from(loan);
     }
 }

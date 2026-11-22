@@ -2,9 +2,9 @@ package com.finguard.finguard_api.audit;
 
 import com.finguard.finguard_api.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,11 +24,11 @@ public class AuditLogService {
         auditLogRepository.save(log);
     }
 
-    public List<AuditLog> getAllLogs() {
-        return auditLogRepository.findAllByOrderByTimestampDesc();
+    public Page<AuditLog> getAllLogs(Pageable pageable) {
+        return auditLogRepository.findAllByOrderByTimestampDesc(pageable);
     }
 
-    public List<AuditLog> getLogsForEntity(Long entityId) {
-        return auditLogRepository.findByEntityIdOrderByTimestampDesc(entityId);
+    public Page<AuditLog> getLogsForEntity(Long entityId, Pageable pageable) {
+        return auditLogRepository.findByEntityIdOrderByTimestampDesc(entityId, pageable);
     }
 }
