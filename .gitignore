@@ -1,0 +1,21 @@
+# FinGuard Root .gitignore
+
+# Environment files
+.env
+*.env
+!.env.example
+
+# IDE & Editor settings
+.vscode/
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Maven target directories
+target/
+**/target/
+
+# OS metadata
+.DS_Store
+Thumbs.db

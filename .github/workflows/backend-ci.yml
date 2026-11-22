@@ -1,0 +1,57 @@
+name: FinGuard Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'finguard-api/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'finguard-api/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: finguard
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: finguard-api/pom.xml
+
+      - name: Run Maven tests
+        working-directory: finguard-api
+        env:
+          DB_HOST: localhost
+          DB_NAME: finguard
+          DB_USER: postgres
+          DB_PASSWORD: testpassword
+          JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+          JWT_EXPIRATION_MS: 86400000
+          GEMINI_API_KEY: test-key
+          GEMINI_MODEL: gemini-2.5-flash
+          CORS_ALLOWED_ORIGINS: http://localhost:5173
+        run: chmod +x mvnw && ./mvnw test -B
