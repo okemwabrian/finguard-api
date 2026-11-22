@@ -1,7 +1,7 @@
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: finguard_db
+    image: postgres:18-alpine
+    container_name: finguard-postgres
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -10,6 +10,24 @@ services:
       - "5433:5432"
     volumes:
       - finguard_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: finguard-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+    ports:
+      - "8080:8080"
 
 volumes:
   finguard_pgdata:
