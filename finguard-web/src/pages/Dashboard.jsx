@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { LogOut, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AdminPanel from '../components/AdminPanel';
 import LoanOfficerPanel from '../components/LoanOfficerPanel';
+import CreditAnalystPanel from '../components/CreditAnalystPanel';
+import AuditorPanel from '../components/AuditorPanel';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [adminTab, setAdminTab] = useState('staff');
 
   const handleLogout = () => {
     logout();
@@ -37,17 +41,38 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-6">
-        {user?.role === 'ADMIN' && <AdminPanel />}
-        {user?.role === 'LOAN_OFFICER' && <LoanOfficerPanel />}
-        {(user?.role === 'CREDIT_ANALYST' || user?.role === 'AUDITOR') && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-            <h2 className="text-lg font-semibold">Welcome, {user?.fullName}</h2>
-            <p className="text-sm text-slate-400 mt-1">
-              Your <strong className="text-indigo-400">{user?.role}</strong> workspace is coming up next in Frontend Phase 3.
-            </p>
-          </div>
+      <main className="max-w-6xl mx-auto p-6 space-y-6">
+        {user?.role === 'ADMIN' && (
+          <>
+            <div className="flex gap-2 border-b border-slate-800 pb-3">
+              <button
+                onClick={() => setAdminTab('staff')}
+                className={`px-4 py-2 text-xs font-medium rounded-lg transition cursor-pointer ${
+                  adminTab === 'staff'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                Staff Management
+              </button>
+              <button
+                onClick={() => setAdminTab('audit')}
+                className={`px-4 py-2 text-xs font-medium rounded-lg transition cursor-pointer ${
+                  adminTab === 'audit'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                Compliance Audit Logs
+              </button>
+            </div>
+            {adminTab === 'staff' ? <AdminPanel /> : <AuditorPanel />}
+          </>
         )}
+
+        {user?.role === 'LOAN_OFFICER' && <LoanOfficerPanel />}
+        {user?.role === 'CREDIT_ANALYST' && <CreditAnalystPanel />}
+        {user?.role === 'AUDITOR' && <AuditorPanel />}
       </main>
     </div>
   );
