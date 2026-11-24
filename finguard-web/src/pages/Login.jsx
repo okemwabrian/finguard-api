@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -32,7 +32,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/70 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white border border-slate-200/90 shadow-sm rounded-2xl p-8 shadow-2xl">
+      <div className="w-full max-w-md bg-white border border-slate-200/90 rounded-2xl p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-600">
             <ShieldCheck className="w-7 h-7" />
@@ -97,6 +97,13 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        <p className="text-center text-xs text-slate-500 mt-5">
+          New borrower?{' '}
+          <Link to="/register" className="text-indigo-600 font-semibold hover:underline">
+            Create an account to apply for a loan
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -109,8 +109,8 @@ public class LoanService {
         LoanApplication loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanId));
 
-        // IDOR protection: Loan Officers can only view loans they submitted
-        if (currentUser.getRole() == Role.LOAN_OFFICER
+        // IDOR protection: Loan Officers and Borrowers can only view loans they submitted
+        if ((currentUser.getRole() == Role.LOAN_OFFICER || currentUser.getRole() == Role.USER)
                 && !loan.getSubmittedBy().getId().equals(currentUser.getId())) {
             throw new AccessDeniedException("You are not authorized to view another officer's loan application.");
         }

@@ -2,6 +2,7 @@ package com.finguard.finguard_api.user;
 
 import com.finguard.finguard_api.audit.AuditLogService;
 import com.finguard.finguard_api.user.dto.CreateUserRequest;
+import com.finguard.finguard_api.user.dto.UpdateUserRequest;
 import com.finguard.finguard_api.user.dto.UpdateUserStatusRequest;
 import com.finguard.finguard_api.user.dto.UserResponse;
 import jakarta.validation.Valid;
@@ -61,6 +62,31 @@ public class AdminUserController {
         return ResponseEntity.ok(users);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserRequest request,
+            @AuthenticationPrincipal User admin
+    ) {
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+        if (!target.getEmail().equalsIgnoreCase(request.email()) && userRepository.existsByEmail(request.email())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Email is already in use by another account."));
+        }
+
+        target.setFullName(request.fullName());
+        target.setEmail(request.email());
+        target.setRole(request.role());
+        User saved = userRepository.save(target);
+
+        auditLogService.record("USER_UPDATED", "USER", saved.getId(), admin,
+                "Updated user " + saved.getEmail() + " (Role: " + saved.getRole() + ")");
+
+        return ResponseEntity.ok(UserResponse.from(saved));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<UserResponse> updateUserStatus(
             @PathVariable Long id,
@@ -86,5 +112,24 @@ public class AdminUserController {
         );
 
         return ResponseEntity.ok(UserResponse.from(saved));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User admin
+    ) {
+        if (admin.getId().equals(id)) {
+            throw new IllegalStateException("You cannot delete your own administrator account.");
+        }
+
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+        userRepository.delete(target);
+        auditLogService.record("USER_DELETED", "USER", id, admin,
+                "Deleted user account " + target.getEmail());
+
+        return ResponseEntity.noContent().build();
     }
 }

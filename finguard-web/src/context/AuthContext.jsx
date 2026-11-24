@@ -9,8 +9,7 @@ export function AuthProvider({ children }) {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const login = async (email, password) => {
-    const { data } = await api.post('/api/auth/login', { email, password });
+  const saveSession = (data) => {
     localStorage.setItem('finguard_token', data.token);
     const userData = {
       email: data.email,
@@ -21,6 +20,16 @@ export function AuthProvider({ children }) {
     localStorage.setItem('finguard_user', JSON.stringify(userData));
     setUser(userData);
     return userData;
+  };
+
+  const login = async (email, password) => {
+    const { data } = await api.post('/api/auth/login', { email, password });
+    return saveSession(data);
+  };
+
+  const register = async (fullName, email, password) => {
+    const { data } = await api.post('/api/auth/register', { fullName, email, password });
+    return saveSession(data);
   };
 
   const completePasswordChange = (newToken) => {
@@ -37,7 +46,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, completePasswordChange, logout }}>
+    <AuthContext.Provider value={{ user, login, register, completePasswordChange, logout }}>
       {children}
     </AuthContext.Provider>
   );
