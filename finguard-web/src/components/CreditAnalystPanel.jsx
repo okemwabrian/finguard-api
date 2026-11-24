@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ClipboardCheck, CheckCircle2, XCircle, PlayCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { ClipboardCheck, CheckCircle2, XCircle, PlayCircle, AlertCircle, Sparkles, Printer } from 'lucide-react';
 import api from '../api/axios';
 import RiskBadge from './RiskBadge';
 import { QueueCardSkeleton } from './SkeletonLoader';
+import { generateLoanReceipt } from '../utils/generateReceipt';
 
 export default function CreditAnalystPanel({ onDecisionMade }) {
   const [loans, setLoans] = useState([]);
@@ -145,7 +146,16 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
                     National ID: {loan.borrowerNationalId} • Purpose: {loan.purpose}
                   </p>
                 </div>
-                <RiskBadge level={loan.aiRiskLevel} score={loan.aiRiskScore} />
+                <div className="flex items-center gap-2">
+                  <RiskBadge level={loan.aiRiskLevel} score={loan.aiRiskScore} />
+                  <button
+                    onClick={() => generateLoanReceipt(loan)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    Receipt
+                  </button>
+                </div>
               </div>
 
               {/* Financial Snapshot */}

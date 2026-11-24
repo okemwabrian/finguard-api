@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Plus, Sparkles, ClipboardList, AlertCircle, X, ShieldCheck } from 'lucide-react';
+import { Plus, Sparkles, ClipboardList, AlertCircle, X, ShieldCheck, Printer } from 'lucide-react';
 import api from '../api/axios';
 import RiskBadge from './RiskBadge';
 import { TableRowSkeleton } from './SkeletonLoader';
 import { useAuth } from '../context/AuthContext';
+import { generateLoanReceipt } from '../utils/generateReceipt';
 
 export default function LoanOfficerPanel({ onLoanSubmitted }) {
   const { user } = useAuth();
@@ -158,19 +159,20 @@ export default function LoanOfficerPanel({ onLoanSubmitted }) {
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3">AI Risk Assessment</th>
                 <th className="px-6 py-3">AI Recommendation</th>
+                <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
                 <>
-                  <TableRowSkeleton cols={5} />
-                  <TableRowSkeleton cols={5} />
-                  <TableRowSkeleton cols={5} />
-                  <TableRowSkeleton cols={5} />
+                  <TableRowSkeleton cols={6} />
+                  <TableRowSkeleton cols={6} />
+                  <TableRowSkeleton cols={6} />
+                  <TableRowSkeleton cols={6} />
                 </>
               ) : loans.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     <p className="text-sm font-medium text-slate-700 mb-1">No loan applications yet</p>
                     <p className="text-xs text-slate-400">Click &quot;New Loan Application&quot; to submit your first application.</p>
                   </td>
@@ -196,8 +198,17 @@ export default function LoanOfficerPanel({ onLoanSubmitted }) {
                     <td className="px-6 py-3.5">
                       <RiskBadge level={loan.aiRiskLevel} score={loan.aiRiskScore} />
                     </td>
-                    <td className="px-6 py-3.5 text-xs text-slate-600 max-w-sm">
+                    <td className="px-6 py-3.5 text-xs text-slate-600 max-w-xs">
                       {loan.aiRecommendation || 'Evaluation pending'}
+                    </td>
+                    <td className="px-6 py-3.5 text-right whitespace-nowrap">
+                      <button
+                        onClick={() => generateLoanReceipt(loan)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition cursor-pointer"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        Receipt
+                      </button>
                     </td>
                   </tr>
                 ))
