@@ -32,6 +32,11 @@ export function AuthProvider({ children }) {
     return saveSession(data);
   };
 
+  const loginWithGoogle = async (credential) => {
+    const { data } = await api.post('/api/auth/google', { credential });
+    return saveSession(data);
+  };
+
   const completePasswordChange = (newToken) => {
     localStorage.setItem('finguard_token', newToken);
     const updated = { ...user, mustChangePassword: false };
@@ -46,7 +51,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, completePasswordChange, logout }}>
+    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, completePasswordChange, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -9,7 +10,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -24,7 +25,7 @@ export default function Login() {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -97,6 +98,26 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span className="text-xs text-slate-400">or continue with</span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={async (res) => {
+              try {
+                await loginWithGoogle(res.credential);
+                navigate('/dashboard');
+              } catch (err) {
+                setError(err.response?.data?.error || err.response?.data?.message || 'Google sign-in failed');
+              }
+            }}
+            onError={() => setError('Google sign-in was cancelled or failed')}
+          />
+        </div>
 
         <p className="text-center text-xs text-slate-500 mt-5">
           New borrower?{' '}

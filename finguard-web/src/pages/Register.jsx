@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShieldCheck, User, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
@@ -10,7 +11,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -110,6 +111,26 @@ export default function Register() {
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
+
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span className="text-xs text-slate-400">or continue with</span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={async (res) => {
+              try {
+                await loginWithGoogle(res.credential);
+                navigate('/dashboard');
+              } catch (err) {
+                setError(err.response?.data?.error || err.response?.data?.message || 'Google sign-in failed');
+              }
+            }}
+            onError={() => setError('Google sign-in was cancelled or failed')}
+          />
+        </div>
 
         <p className="text-center text-xs text-slate-500 mt-5">
           Already have an account?{' '}
