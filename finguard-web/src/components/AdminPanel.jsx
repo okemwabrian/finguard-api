@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, Users, ShieldAlert, CheckCircle2, AlertCircle } from 'lucide-react';
+import { UserPlus, Users, ShieldAlert, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,6 +17,7 @@ export default function AdminPanel() {
     temporaryPassword: '',
     role: 'LOAN_OFFICER',
   });
+  const [showTempPassword, setShowTempPassword] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -101,15 +102,25 @@ export default function AdminPanel() {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
           />
-          <input
-            type="password"
-            required
-            minLength={8}
-            placeholder="Temp Password (8+ chars)"
-            value={form.temporaryPassword}
-            onChange={(e) => setForm({ ...form, temporaryPassword: e.target.value })}
-            className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
-          />
+          <div className="relative">
+            <input
+              type={showTempPassword ? 'text' : 'password'}
+              required
+              minLength={8}
+              placeholder="Temp Password (8+ chars)"
+              value={form.temporaryPassword}
+              onChange={(e) => setForm({ ...form, temporaryPassword: e.target.value })}
+              className="w-full pl-3.5 pr-9 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+            />
+            <button
+              type="button"
+              onClick={() => setShowTempPassword(!showTempPassword)}
+              className="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300 transition cursor-pointer"
+              title={showTempPassword ? 'Hide password' : 'Show password'}
+            >
+              {showTempPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
