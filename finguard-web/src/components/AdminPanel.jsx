@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { UserPlus, Users, ShieldAlert, CheckCircle2, AlertCircle, Pencil, Trash2, X, Eye, EyeOff } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { TableRowSkeleton } from './SkeletonLoader';
 
 export default function AdminPanel() {
   const { user: currentUser } = useAuth();
@@ -197,9 +198,12 @@ export default function AdminPanel() {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">Loading users...</td>
-                </tr>
+                <>
+                  <TableRowSkeleton cols={5} />
+                  <TableRowSkeleton cols={5} />
+                  <TableRowSkeleton cols={5} />
+                  <TableRowSkeleton cols={5} />
+                </>
               ) : (
                 users.map((staff) => (
                   <tr key={staff.id} className="hover:bg-slate-50/80">

@@ -1,12 +1,15 @@
 package com.finguard.finguard_api.user;
 
 import com.finguard.finguard_api.audit.AuditLogService;
+import com.finguard.finguard_api.config.CacheConfig;
 import com.finguard.finguard_api.user.dto.CreateUserRequest;
 import com.finguard.finguard_api.user.dto.UpdateUserRequest;
 import com.finguard.finguard_api.user.dto.UpdateUserStatusRequest;
 import com.finguard.finguard_api.user.dto.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,6 +31,7 @@ public class AdminUserController {
     private final AuditLogService auditLogService;
 
     @PostMapping
+    @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
     public ResponseEntity<?> onboardStaff(
             @Valid @RequestBody CreateUserRequest request,
             @AuthenticationPrincipal User admin
@@ -54,6 +58,7 @@ public class AdminUserController {
     }
 
     @GetMapping
+    @Cacheable(value = CacheConfig.CACHE_ADMIN_USERS)
     public ResponseEntity<List<UserResponse>> listAllUsers() {
         List<UserResponse> users = userRepository.findAll()
                 .stream()
@@ -63,6 +68,7 @@ public class AdminUserController {
     }
 
     @PutMapping("/{id}")
+    @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
     public ResponseEntity<?> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request,
@@ -88,6 +94,7 @@ public class AdminUserController {
     }
 
     @PatchMapping("/{id}/status")
+    @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
     public ResponseEntity<UserResponse> updateUserStatus(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserStatusRequest request,
@@ -115,6 +122,7 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
+    @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
     public ResponseEntity<?> deleteUser(
             @PathVariable Long id,
             @AuthenticationPrincipal User admin

@@ -2,6 +2,7 @@ package com.finguard.finguard_api.loan;
 
 import com.finguard.finguard_api.loan.dto.CreateLoanRequest;
 import com.finguard.finguard_api.loan.dto.LoanResponse;
+import com.finguard.finguard_api.loan.dto.LoanStatsResponse;
 import com.finguard.finguard_api.loan.dto.ReviewLoanRequest;
 import com.finguard.finguard_api.user.User;
 import jakarta.validation.Valid;
@@ -49,6 +50,12 @@ public class LoanController {
             @PageableDefault(size = 15) Pageable pageable
     ) {
         return ResponseEntity.ok(loanService.getMySubmittedLoans(currentUser, pageable));
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CREDIT_ANALYST', 'AUDITOR', 'USER')")
+    public ResponseEntity<LoanStatsResponse> getLoanStats(@AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(loanService.getLoanStats(currentUser));
     }
 
     @GetMapping

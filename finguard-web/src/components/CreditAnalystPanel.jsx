@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { ClipboardCheck, CheckCircle2, XCircle, PlayCircle, AlertCircle, Sparkles } from 'lucide-react';
 import api from '../api/axios';
 import RiskBadge from './RiskBadge';
+import { QueueCardSkeleton } from './SkeletonLoader';
 
-export default function CreditAnalystPanel() {
+export default function CreditAnalystPanel({ onDecisionMade }) {
   const [loans, setLoans] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(0);
@@ -24,7 +25,7 @@ export default function CreditAnalystPanel() {
       const { data } = await api.get(query);
       setLoans(data.content || []);
       setTotalPages(data.totalPages || 0);
-    } catch (err) {
+    } catch {
       setError('Failed to load loan underwriting queue.');
     } finally {
       setLoading(false);
@@ -54,6 +55,9 @@ export default function CreditAnalystPanel() {
       setSuccess(`Loan #${loanId} updated to ${newStatus}.`);
       setNotesByLoan((prev) => ({ ...prev, [loanId]: '' }));
       fetchLoans(page, statusFilter);
+      if (onDecisionMade) {
+        onDecisionMade();
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Status update failed.');
     } finally {
@@ -115,8 +119,10 @@ export default function CreditAnalystPanel() {
 
       {/* Loan Cards */}
       {loading ? (
-        <div className="bg-white border border-slate-200/90 shadow-sm rounded-xl p-10 text-center text-slate-500 text-sm">
-          Loading underwriting queue...
+        <div className="space-y-4">
+          <QueueCardSkeleton />
+          <QueueCardSkeleton />
+          <QueueCardSkeleton />
         </div>
       ) : loans.length === 0 ? (
         <div className="bg-white border border-slate-200/90 shadow-sm rounded-xl p-10 text-center text-slate-500 text-sm">

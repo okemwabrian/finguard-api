@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Shield, AlertCircle, RefreshCw } from 'lucide-react';
 import api from '../api/axios';
+import { TableRowSkeleton } from './SkeletonLoader';
 
 export default function AuditorPanel() {
   const [logs, setLogs] = useState([]);
@@ -16,7 +17,7 @@ export default function AuditorPanel() {
       const { data } = await api.get(`/api/audit-logs?page=${targetPage}&size=20`);
       setLogs(data.content || []);
       setTotalPages(data.totalPages || 0);
-    } catch (err) {
+    } catch {
       setError('Failed to load compliance audit logs.');
     } finally {
       setLoading(false);
@@ -64,9 +65,12 @@ export default function AuditorPanel() {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
-                <tr>
-                  <td colSpan="5" className="px-5 py-8 text-center text-slate-500">Loading audit logs...</td>
-                </tr>
+                <>
+                  <TableRowSkeleton cols={5} />
+                  <TableRowSkeleton cols={5} />
+                  <TableRowSkeleton cols={5} />
+                  <TableRowSkeleton cols={5} />
+                </>
               ) : logs.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="px-5 py-8 text-center text-slate-500">No audit records yet.</td>

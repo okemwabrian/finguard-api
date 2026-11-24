@@ -8,6 +8,7 @@ import com.finguard.finguard_api.loan.dto.LoanResponse;
 import com.finguard.finguard_api.loan.dto.ReviewLoanRequest;
 import com.finguard.finguard_api.user.Role;
 import com.finguard.finguard_api.user.User;
+import com.finguard.finguard_api.loan.dto.LoanStatsResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +18,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -172,5 +175,56 @@ class LoanServiceTest {
 
         assertEquals(10L, response.id());
         assertEquals("John Kamau", response.borrowerName());
+    }
+
+    @Test
+    void shouldComputeGlobalLoanStatsForStaff() {
+        when(loanRepository.sumTotalRequestedAmount()).thenReturn(new BigDecimal("1500000.00"));
+        List<Object[]> statusCounts = List.of(
+                new Object[]{LoanStatus.APPROVED, 3L},
+                new Object[]{LoanStatus.PENDING, 1L}
+        );
+        List<Object[]> riskCounts = List.of(
+                new Object[]{"LOW", 3L},
+                new Object[]{"HIGH", 1L}
+        );
+        when(loanRepository.countByStatusGrouped()).thenReturn(statusCounts);
+        when(loanRepository.countByAiRiskLevelGrouped()).thenReturn(riskCounts);
+
+        LoanStatsResponse stats = loanService.getLoanStats(creditAnalyst);
+
+        assertEquals(new BigDecimal("1500000.00"), stats.totalVolumeKes());
+        assertEquals(4, stats.totalLoansCount());
+        assertEquals(3, stats.approvedCount());
+        assertEquals(1, stats.pendingCount());
+        assertEquals(75.0, stats.approvalRate());
+        assertEquals(3, stats.lowRiskCount());
+        assertEquals(75.0, stats.lowRiskPercentage());
+        assertEquals(1, stats.highRiskCount());
+        assertEquals(25.0, stats.highRiskPercentage());
+    }
+
+    @Test
+    void shouldComputeUserSpecificLoanStatsForBorrower() {
+        User borrower = User.builder().id(5L).role(Role.USER).build();
+        when(loanRepository.sumTotalRequestedAmountByUserId(5L)).thenReturn(new BigDecimal("300000.00"));
+        List<Object[]> statusCounts = Collections.singletonList(
+                new Object[]{LoanStatus.PENDING, 1L}
+        );
+        List<Object[]> riskCounts = Collections.singletonList(
+                new Object[]{"MEDIUM", 1L}
+        );
+        when(loanRepository.countByStatusGroupedByUserId(5L)).thenReturn(statusCounts);
+        when(loanRepository.countByAiRiskLevelGroupedByUserId(5L)).thenReturn(riskCounts);
+
+        LoanStatsResponse stats = loanService.getLoanStats(borrower);
+
+        assertEquals(new BigDecimal("300000.00"), stats.totalVolumeKes());
+        assertEquals(1, stats.totalLoansCount());
+        assertEquals(1, stats.pendingCount());
+        assertEquals(0, stats.approvedCount());
+        assertEquals(0.0, stats.approvalRate());
+        assertEquals(1, stats.mediumRiskCount());
+        assertEquals(100.0, stats.mediumRiskPercentage());
     }
 }
