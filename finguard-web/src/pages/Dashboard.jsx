@@ -1,6 +1,8 @@
 import { LogOut, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import AdminPanel from '../components/AdminPanel';
+import LoanOfficerPanel from '../components/LoanOfficerPanel';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -22,7 +24,9 @@ export default function Dashboard() {
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-400 hidden sm:inline">{user?.fullName} ({user?.email})</span>
+          <span className="text-sm text-slate-400 hidden sm:inline">
+            {user?.fullName} ({user?.email})
+          </span>
           <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition cursor-pointer"
@@ -34,12 +38,16 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto p-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold">Welcome, {user?.fullName}</h2>
-          <p className="text-sm text-slate-400 mt-1">
-            Connected to FinGuard AI backend as <strong className="text-indigo-400">{user?.role}</strong>. Ready for Phase 2 role dashboards.
-          </p>
-        </div>
+        {user?.role === 'ADMIN' && <AdminPanel />}
+        {user?.role === 'LOAN_OFFICER' && <LoanOfficerPanel />}
+        {(user?.role === 'CREDIT_ANALYST' || user?.role === 'AUDITOR') && (
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+            <h2 className="text-lg font-semibold">Welcome, {user?.fullName}</h2>
+            <p className="text-sm text-slate-400 mt-1">
+              Your <strong className="text-indigo-400">{user?.role}</strong> workspace is coming up next in Frontend Phase 3.
+            </p>
+          </div>
+        )}
       </main>
     </div>
   );
