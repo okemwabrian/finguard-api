@@ -38,6 +38,11 @@ export default function BorrowerLoanDetail() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadLoading, setUploadLoading] = useState(false);
 
+  // Correction / Resubmit state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [resubmitLoading, setResubmitLoading] = useState(false);
+
   const fetchLoanData = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -110,6 +115,43 @@ export default function BorrowerLoanDetail() {
     }
   };
 
+  const openEditModal = () => {
+    setEditForm({
+      borrowerName: loan.borrowerName || '',
+      borrowerNationalId: loan.borrowerNationalId || '',
+      monthlyIncome: loan.monthlyIncome || '',
+      existingMonthlyDebt: loan.existingMonthlyDebt || 0,
+      requestedAmount: loan.requestedAmount || '',
+      repaymentMonths: loan.repaymentMonths || 12,
+      purpose: loan.purpose || '',
+    });
+    setShowEditModal(true);
+  };
+
+  const handleResubmitCorrection = async (e) => {
+    e.preventDefault();
+    setResubmitLoading(true);
+    setError('');
+    try {
+      await api.put(`/api/borrower/loans/${id}/resubmit`, {
+        borrowerName: editForm.borrowerName,
+        borrowerNationalId: editForm.borrowerNationalId,
+        monthlyIncome: Number(editForm.monthlyIncome),
+        existingMonthlyDebt: Number(editForm.existingMonthlyDebt),
+        requestedAmount: Number(editForm.requestedAmount),
+        repaymentMonths: Number(editForm.repaymentMonths),
+        purpose: editForm.purpose,
+      });
+      setPaymentSuccess('Application corrected and resubmitted for underwriting review!');
+      setShowEditModal(false);
+      fetchLoanData();
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to resubmit application');
+    } finally {
+      setResubmitLoading(false);
+    }
+  };
+
   const handleDownloadDoc = async (docId, fileName) => {
     try {
       const response = await api.get(`/api/loans/${id}/documents/${docId}/download`, {
@@ -161,12 +203,13 @@ export default function BorrowerLoanDetail() {
   const isApproved = loan?.status === 'APPROVED';
   const isRejected = loan?.status === 'REJECTED';
   const isUnderReview = loan?.status === 'UNDER_REVIEW';
+  const isCorrectionRequired = loan?.status === 'CORRECTION_REQUIRED';
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <BorrowerNavbar />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-24 md:py-8 space-y-6">
         {/* Header Breadcrumbs */}
         <div className="flex items-center justify-between">
           <Link
@@ -187,6 +230,29 @@ export default function BorrowerLoanDetail() {
             <span>{paymentSuccess}</span>
             <button onClick={() => setPaymentSuccess('')} className="cursor-pointer">
               <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {isCorrectionRequired && (
+          <div className="p-5 rounded-2xl bg-amber-50 border border-amber-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-amber-800 text-xs font-bold uppercase tracking-wider">
+                <AlertCircle className="w-4 h-4" />
+                <span>Correction Requested by Credit Analyst</span>
+              </div>
+              <p className="text-sm font-semibold text-amber-950">
+                {loan.reviewerNotes || 'Please review your application details or KYC documents and resubmit.'}
+              </p>
+              <p className="text-xs text-amber-700">
+                You can update your financial/personal details below or attach updated documents before resubmitting.
+              </p>
+            </div>
+            <button
+              onClick={openEditModal}
+              className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition cursor-pointer shrink-0"
+            >
+              Edit & Resubmit Application
             </button>
           </div>
         )}
@@ -602,6 +668,124 @@ export default function BorrowerLoanDetail() {
                     className="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold transition"
                   >
                     {uploadLoading ? 'Uploading...' : 'Upload Document'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {/* Edit & Resubmit Correction Modal */}
+        {showEditModal && editForm && (
+          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Correct & Resubmit Application #{loan.id}</h3>
+                  <p className="text-[11px] text-amber-700 mt-0.5">Analyst note: {loan.reviewerNotes}</p>
+                </div>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleResubmitCorrection} className="space-y-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.borrowerName}
+                      onChange={(e) => setEditForm({ ...editForm, borrowerName: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">National ID</label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.borrowerNationalId}
+                      onChange={(e) => setEditForm({ ...editForm, borrowerNationalId: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Monthly Income (KES)</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={editForm.monthlyIncome}
+                      onChange={(e) => setEditForm({ ...editForm, monthlyIncome: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Existing Monthly Debt (KES)</label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      value={editForm.existingMonthlyDebt}
+                      onChange={(e) => setEditForm({ ...editForm, existingMonthlyDebt: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Requested Amount (KES)</label>
+                    <input
+                      type="number"
+                      required
+                      min="100"
+                      value={editForm.requestedAmount}
+                      onChange={(e) => setEditForm({ ...editForm, requestedAmount: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Repayment Term (Months)</label>
+                    <select
+                      value={editForm.repaymentMonths}
+                      onChange={(e) => setEditForm({ ...editForm, repaymentMonths: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="6">6 Months</option>
+                      <option value="12">12 Months</option>
+                      <option value="24">24 Months</option>
+                      <option value="36">36 Months</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Loan Purpose</label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.purpose}
+                    onChange={(e) => setEditForm({ ...editForm, purpose: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-semibold cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resubmitLoading}
+                    className="px-5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-semibold transition cursor-pointer"
+                  >
+                    {resubmitLoading ? 'Resubmitting...' : 'Resubmit for Review'}
                   </button>
                 </div>
               </form>

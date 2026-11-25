@@ -155,6 +155,68 @@ public class LoanService {
         return LoanResponse.from(updated);
     }
 
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_LOANS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_MY_LOANS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_LOAN_DETAILS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_LOAN_STATS, allEntries = true)
+    })
+    public LoanResponse resubmitLoan(Long loanId, CreateLoanRequest request, User borrower) {
+        LoanApplication loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanId));
+
+        boolean isOwner = (loan.getBorrower() != null && loan.getBorrower().getId().equals(borrower.getId()))
+                || loan.getSubmittedBy().getId().equals(borrower.getId());
+        if (!isOwner) {
+            throw new AccessDeniedException("Access denied: You do not own this loan application.");
+        }
+
+        if (loan.getStatus() != LoanStatus.CORRECTION_REQUIRED) {
+            throw new IllegalStateException("Only loans marked CORRECTION_REQUIRED can be edited and resubmitted.");
+        }
+
+        Integer term = request.termMonths() != null ? request.termMonths() : request.repaymentMonths();
+        loan.setBorrowerName(request.borrowerName());
+        loan.setBorrowerNationalId(request.borrowerNationalId());
+        loan.setMonthlyIncome(request.monthlyIncome());
+        loan.setExistingMonthlyDebt(request.existingMonthlyDebt());
+        loan.setRequestedAmount(request.requestedAmount());
+        loan.setRepaymentMonths(term);
+        loan.setTermMonths(term);
+        loan.setPurpose(request.purpose());
+        loan.setStatus(LoanStatus.PENDING);
+
+        RiskAssessmentResponse risk = creditRiskService.assessRisk(loan);
+        loan.setAiRiskScore(risk.riskScore());
+        loan.setAiRiskLevel(risk.riskLevel());
+        loan.setAiRecommendation(risk.recommendation());
+
+        LoanApplication saved = loanRepository.save(loan);
+
+        auditLogService.record(
+                "LOAN_CORRECTION_SUBMITTED",
+                "LOAN_APPLICATION",
+                saved.getId(),
+                borrower,
+                "Borrower corrected and resubmitted loan #" + saved.getId()
+                        + " (Amount: " + saved.getRequestedAmount()
+                        + ", AI Risk: " + saved.getAiRiskLevel() + " [" + saved.getAiRiskScore() + "])"
+        );
+
+        if (saved.getReviewedBy() != null) {
+            notificationService.sendNotification(
+                    saved.getReviewedBy(),
+                    NotificationType.LOAN_STATUS_CHANGED,
+                    "Correction Submitted (#" + saved.getId() + ")",
+                    borrower.getFullName() + " has updated and resubmitted loan #" + saved.getId() + " for review.",
+                    saved.getId()
+            );
+        }
+
+        return LoanResponse.from(saved);
+    }
+
     @Transactional(readOnly = true)
     @Cacheable(value = CacheConfig.CACHE_LOANS, key = "(#status != null ? #status.name() : 'ALL') + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<LoanResponse> getAllLoans(LoanStatus status, Pageable pageable) {

@@ -186,10 +186,16 @@ public class AnalyticsService {
 
         Map<String, String> monthlyMap = new LinkedHashMap<>();
         for (Object[] r : monthlyRows) {
-            String m = (String) r[0];
+            String m = r[0] != null ? r[0].toString() : "Unknown";
             long count = ((Number) r[1]).longValue();
-            BigDecimal vol = (BigDecimal) r[2];
+            String vol = r[2] != null ? r[2].toString() : "0";
             monthlyMap.put(m, count + " loans (KES " + vol + ")");
+        }
+
+        StringBuilder riskStatusBuilder = new StringBuilder();
+        for (Object[] r : riskStatusRows) {
+            if (!riskStatusBuilder.isEmpty()) riskStatusBuilder.append(", ");
+            riskStatusBuilder.append(r[0]).append(" / ").append(r[1]).append(": ").append(r[2]);
         }
 
         return new PortfolioAggregates(
@@ -199,24 +205,44 @@ public class AnalyticsService {
                 riskMap,
                 delinquentCount,
                 monthlyMap,
-                riskStatusRows.toString()
+                riskStatusBuilder.toString()
         );
     }
 
     public AnalyticsAskResponse computeFallbackResponse(String question, PortfolioAggregates agg) {
         String q = question.toLowerCase();
 
-        if (q.contains("delinquen") || q.contains("overdue")) {
+        if (q.contains("delinquen") || q.contains("overdue") || q.contains("late")) {
+            long performing = Math.max(0, agg.totalLoans() - agg.delinquentCount());
+            double rate = agg.totalLoans() > 0 ? (agg.delinquentCount() * 100.0) / agg.totalLoans() : 0.0;
             return new AnalyticsAskResponse(
-                    "Currently, there are " + agg.delinquentCount() + " delinquent loans flagged in the portfolio.",
+                    String.format("Currently, %d of %d loans (%.1f%%) are flagged as delinquent, while %d facilities are performing.",
+                            agg.delinquentCount(), agg.totalLoans(), rate, performing),
                     new ChartSpec(
                             "BAR",
-                            "Delinquency Overview",
-                            List.of("Delinquent", "Current / Performing"),
-                            List.of(new ChartSeries("Loans", List.of(agg.delinquentCount(), Math.max(0, agg.totalLoans() - agg.delinquentCount()))))
+                            "Portfolio Delinquency Overview",
+                            List.of("Delinquent", "Performing"),
+                            List.of(new ChartSeries("Loans", List.of(agg.delinquentCount(), performing)))
                     )
             );
-        } else if (q.contains("month") || q.contains("trend") || q.contains("volume")) {
+        } else if (q.contains("approv") || q.contains("rate") || q.contains("reject")) {
+            long approved = agg.statusCounts().getOrDefault("APPROVED", 0L);
+            long rejected = agg.statusCounts().getOrDefault("REJECTED", 0L);
+            long pending = agg.statusCounts().getOrDefault("PENDING", 0L)
+                    + agg.statusCounts().getOrDefault("UNDER_REVIEW", 0L)
+                    + agg.statusCounts().getOrDefault("CORRECTION_REQUIRED", 0L);
+            double approvalRate = agg.totalLoans() > 0 ? (approved * 100.0) / agg.totalLoans() : 0.0;
+            return new AnalyticsAskResponse(
+                    String.format("Overall approval rate is %.1f%% (%d approved, %d rejected, %d active in review/pending) across %d total applications.",
+                            approvalRate, approved, rejected, pending, agg.totalLoans()),
+                    new ChartSpec(
+                            "BAR",
+                            "Underwriting Outcomes",
+                            List.of("Approved", "In Review / Pending", "Rejected"),
+                            List.of(new ChartSeries("Applications", List.of(approved, pending, rejected)))
+                    )
+            );
+        } else if (q.contains("month") || q.contains("trend") || q.contains("volume") || q.contains("origination")) {
             List<String> labels = new ArrayList<>(agg.monthlyVolume().keySet());
             Collections.reverse(labels);
             List<Number> data = new ArrayList<>();
@@ -248,7 +274,7 @@ public class AnalyticsService {
                     )
             );
         } else {
-            List<String> statuses = List.of("PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED");
+            List<String> statuses = List.of("PENDING", "UNDER_REVIEW", "CORRECTION_REQUIRED", "APPROVED", "REJECTED");
             List<Number> counts = statuses.stream()
                     .map(s -> (Number) agg.statusCounts().getOrDefault(s, 0L))
                     .toList();

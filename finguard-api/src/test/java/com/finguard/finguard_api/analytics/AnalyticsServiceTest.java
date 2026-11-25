@@ -63,7 +63,7 @@ class AnalyticsServiceTest {
         AnalyticsAskResponse response = analyticsService.computeFallbackResponse("What is the delinquency rate?", agg);
 
         assertThat(response).isNotNull();
-        assertThat(response.answer()).contains("2 delinquent loans");
+        assertThat(response.answer()).contains("2 of 10 loans");
         assertThat(response.chart().type()).isEqualTo("BAR");
         assertThat(response.chart().title()).contains("Delinquency");
     }

@@ -128,8 +128,8 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
     setSuccess('');
     const notes = (notesByLoan[loanId] || '').trim();
 
-    if ((newStatus === 'APPROVED' || newStatus === 'REJECTED') && !notes) {
-      setError('Please enter reviewer notes before approving or rejecting a loan.');
+    if ((newStatus === 'APPROVED' || newStatus === 'REJECTED' || newStatus === 'CORRECTION_REQUIRED') && !notes) {
+      setError('Please enter reviewer notes before approving, rejecting, or requesting a correction.');
       return;
     }
 
@@ -158,6 +158,7 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
     const styles = {
       PENDING: 'bg-slate-100 text-slate-700 border-slate-200',
       UNDER_REVIEW: 'bg-indigo-500/15 text-indigo-700 border-indigo-500/30',
+      CORRECTION_REQUIRED: 'bg-amber-50 text-amber-700 border-amber-300',
       APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-500/30',
       REJECTED: 'bg-rose-50 text-rose-700 border-red-500/30',
     };
@@ -197,7 +198,7 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {['', 'PENDING', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'].map((status) => (
+          {['', 'PENDING', 'UNDER_REVIEW', 'CORRECTION_REQUIRED', 'APPROVED', 'REJECTED'].map((status) => (
             <button
               key={status || 'ALL'}
               onClick={() => {
@@ -410,7 +411,7 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
                           onChange={(e) => setNotesByLoan((prev) => ({ ...prev, [loan.id]: e.target.value }))}
                           className="flex-1 px-3.5 py-2 bg-slate-50/80 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
                         />
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             disabled={processingId === loan.id}
                             onClick={() => handleTransition(loan.id, 'APPROVED')}
@@ -418,6 +419,14 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
                           >
                             <CheckCircle2 className="w-4 h-4" />
                             Approve
+                          </button>
+                          <button
+                            disabled={processingId === loan.id}
+                            onClick={() => handleTransition(loan.id, 'CORRECTION_REQUIRED')}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-medium rounded-lg transition cursor-pointer"
+                          >
+                            <AlertCircle className="w-4 h-4" />
+                            Request Correction
                           </button>
                           <button
                             disabled={processingId === loan.id}

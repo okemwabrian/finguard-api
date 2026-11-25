@@ -44,6 +44,7 @@ export default function BorrowerLoanApply() {
   const [existingMonthlyDebt, setExistingMonthlyDebt] = useState('');
   const [requestedAmount, setRequestedAmount] = useState('');
   const [repaymentMonths, setRepaymentMonths] = useState(12);
+  const [purpose, setPurpose] = useState('');
 
   // Step 3: KYC Documents Staging
   const [files, setFiles] = useState([]); // array of { file, docType }
@@ -84,6 +85,7 @@ export default function BorrowerLoanApply() {
         existingMonthlyDebt: debtNum,
         requestedAmount: Number(requestedAmount),
         repaymentMonths: Number(repaymentMonths),
+        purpose: purpose.trim() || 'Working capital / personal financing',
       };
 
       const { data: loan } = await api.post('/api/borrower/loans', loanPayload);
@@ -120,7 +122,7 @@ export default function BorrowerLoanApply() {
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <BorrowerNavbar />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-24 md:py-8">
         {/* Progress Stepper */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -307,6 +309,19 @@ export default function BorrowerLoanApply() {
                       <option value="36">36 Months (3 Years)</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Loan Purpose</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={500}
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                    placeholder="e.g. Business inventory expansion, home renovation, education..."
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white"
+                  />
                 </div>
               </div>
 
