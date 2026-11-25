@@ -8,12 +8,14 @@ import {
   Shield,
   ClipboardList,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Eye
 } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../context/ToastContext';
 import { extractApiError } from '../utils/extractErrorMessage';
 import RiskBadge from './RiskBadge';
+import DocumentPreviewModal from './DocumentPreviewModal';
 
 export default function AdminUserActivityModal({ userId, onClose, onDataChanged }) {
   const { showToast } = useToast();
@@ -22,6 +24,7 @@ export default function AdminUserActivityModal({ userId, onClose, onDataChanged 
   const [activeTab, setActiveTab] = useState('loans'); // 'loans' | 'documents' | 'audit'
   const [editingLoan, setEditingLoan] = useState(null);
   const [savingLoan, setSavingLoan] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   const fetchActivity = async () => {
     setLoading(true);
@@ -243,6 +246,14 @@ export default function AdminUserActivityModal({ userId, onClose, onDataChanged 
                           </span>
 
                           <button
+                            onClick={() => setPreviewDoc({ loanId: doc.loanId, doc })}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-semibold transition cursor-pointer"
+                            title="View Document"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View
+                          </button>
+
+                          <button
                             onClick={() => handleDownloadDoc(doc.loanId, doc.id, doc.fileName)}
                             className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 transition cursor-pointer"
                             title="Download Document"
@@ -392,6 +403,14 @@ export default function AdminUserActivityModal({ userId, onClose, onDataChanged 
           </div>
         )}
       </div>
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          loanId={previewDoc.loanId}
+          doc={previewDoc.doc}
+          onClose={() => setPreviewDoc(null)}
+        />
+      )}
     </div>
   );
 }

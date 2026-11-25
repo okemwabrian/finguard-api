@@ -12,13 +12,15 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
-  X
+  X,
+  Eye
 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import RiskBadge from './RiskBadge';
 import { QueueCardSkeleton } from './SkeletonLoader';
 import { generateLoanReceipt } from '../utils/generateReceipt';
+import DocumentPreviewModal from './DocumentPreviewModal';
 
 export default function CreditAnalystPanel({ onDecisionMade }) {
   const { user: currentUser } = useAuth();
@@ -36,6 +38,7 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
   const [documentsByLoan, setDocumentsByLoan] = useState({});
   const [expandedDocs, setExpandedDocs] = useState({});
   const [loadingDocs, setLoadingDocs] = useState({});
+  const [previewDoc, setPreviewDoc] = useState(null); // { loanId, doc }
 
   const fetchLoans = async (targetPage = page, filter = statusFilter) => {
     setLoading(true);
@@ -345,8 +348,17 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
                               </span>
 
                               <button
+                                onClick={() => setPreviewDoc({ loanId: loan.id, doc })}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-semibold transition cursor-pointer"
+                                title="View document in browser"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>View</span>
+                              </button>
+
+                              <button
                                 onClick={() => handleDownloadDoc(loan.id, doc.id, doc.fileName)}
-                                className="p-1 rounded-md hover:bg-slate-200 text-slate-600 transition"
+                                className="p-1 rounded-md hover:bg-slate-200 text-slate-600 transition cursor-pointer"
                                 title="Download"
                               >
                                 <Download className="w-3.5 h-3.5" />
@@ -474,6 +486,13 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
             </button>
           </div>
         </div>
+      )}
+      {previewDoc && (
+        <DocumentPreviewModal
+          loanId={previewDoc.loanId}
+          doc={previewDoc.doc}
+          onClose={() => setPreviewDoc(null)}
+        />
       )}
     </div>
   );

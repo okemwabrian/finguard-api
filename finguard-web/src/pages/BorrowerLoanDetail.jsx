@@ -10,10 +10,12 @@ import {
   UploadCloud,
   Download,
   Sparkles,
-  X
+  X,
+  Eye
 } from 'lucide-react';
 import BorrowerNavbar from '../components/BorrowerNavbar';
 import RiskBadge from '../components/RiskBadge';
+import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import api from '../api/axios';
 
 export default function BorrowerLoanDetail() {
@@ -42,6 +44,7 @@ export default function BorrowerLoanDetail() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [resubmitLoading, setResubmitLoading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   const fetchLoanData = useCallback(async () => {
     setLoading(true);
@@ -438,8 +441,17 @@ export default function BorrowerLoanDetail() {
                     </span>
 
                     <button
+                      onClick={() => setPreviewDoc(doc)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-semibold transition cursor-pointer"
+                      title="View document"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View</span>
+                    </button>
+
+                    <button
                       onClick={() => handleDownloadDoc(doc.id, doc.fileName)}
-                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition"
+                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition cursor-pointer"
                       title="Download document"
                     >
                       <Download className="w-4 h-4" />
@@ -793,6 +805,14 @@ export default function BorrowerLoanDetail() {
           </div>
         )}
       </main>
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          loanId={id}
+          doc={previewDoc}
+          onClose={() => setPreviewDoc(null)}
+        />
+      )}
     </div>
   );
 }
