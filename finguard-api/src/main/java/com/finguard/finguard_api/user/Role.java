@@ -5,5 +5,6 @@ public enum Role {
     LOAN_OFFICER,
     CREDIT_ANALYST,
     AUDITOR,
-    USER
+    USER,
+    BORROWER
 }

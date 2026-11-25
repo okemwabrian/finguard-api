@@ -27,8 +27,8 @@ export function AuthProvider({ children }) {
     return saveSession(data);
   };
 
-  const register = async (fullName, email, password) => {
-    const { data } = await api.post('/api/auth/register', { fullName, email, password });
+  const register = async (fullName, email, password, phone = '', nationalId = '') => {
+    const { data } = await api.post('/api/auth/register', { fullName, email, password, phone, nationalId });
     return saveSession(data);
   };
 

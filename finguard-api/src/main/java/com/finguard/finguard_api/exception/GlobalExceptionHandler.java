@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,35 +25,56 @@ public class GlobalExceptionHandler {
             errors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
         return ResponseEntity.badRequest().body(
-                ApiErrorResponse.ofValidation(400, "VALIDATION_FAILED", "Request validation failed", errors)
+                ApiErrorResponse.ofValidation(
+                        400,
+                        "VALIDATION_FAILED",
+                        "Please verify your inputs and correct the highlighted fields.",
+                        errors
+                )
         );
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalState(IllegalStateException ex) {
+        String msg = ex.getMessage() != null ? ex.getMessage() : "State conflict occurred.";
+        if (msg.toLowerCase().contains("rate limit")) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(
+                    ApiErrorResponse.of(429, "RATE_LIMITED", msg)
+            );
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
-                ApiErrorResponse.of(409, "CONFLICT", ex.getMessage())
+                ApiErrorResponse.of(409, "CONFLICT", msg)
         );
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(
-                ApiErrorResponse.of(400, "BAD_REQUEST", ex.getMessage())
+        String msg = ex.getMessage() != null ? ex.getMessage() : "Invalid argument passed.";
+        int status = msg.toLowerCase().contains("not found") ? 404 : 400;
+        String code = status == 404 ? "NOT_FOUND" : "BAD_REQUEST";
+        return ResponseEntity.status(status).body(
+                ApiErrorResponse.of(status, code, msg)
         );
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
-                ApiErrorResponse.of(401, "UNAUTHORIZED", "Invalid email or password")
+                ApiErrorResponse.of(401, "INVALID_CREDENTIALS", "Invalid email or password. Please verify your credentials.")
         );
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                ApiErrorResponse.of(403, "FORBIDDEN", "You do not have permission to perform this action")
+                ApiErrorResponse.of(403, "ACCESS_DENIED", ex.getMessage() != null ? ex.getMessage() : "You do not have permission to perform this action.")
+        );
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                ApiErrorResponse.of(400, "FILE_TOO_LARGE", "Uploaded file exceeds maximum allowed limit of 10MB.")
         );
     }
 
@@ -60,7 +82,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex) {
         log.error("Unhandled exception caught: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiErrorResponse.of(500, "INTERNAL_SERVER_ERROR", "An unexpected internal error occurred")
+                ApiErrorResponse.of(500, "INTERNAL_ERROR", "Our service encountered a temporary error. Please try again shortly or contact support.")
         );
     }
 }

@@ -6,6 +6,8 @@ import com.finguard.finguard_api.audit.AuditLogService;
 import com.finguard.finguard_api.loan.dto.CreateLoanRequest;
 import com.finguard.finguard_api.loan.dto.LoanResponse;
 import com.finguard.finguard_api.loan.dto.ReviewLoanRequest;
+import com.finguard.finguard_api.notification.NotificationService;
+import com.finguard.finguard_api.repayment.RepaymentScheduleService;
 import com.finguard.finguard_api.user.Role;
 import com.finguard.finguard_api.user.User;
 import com.finguard.finguard_api.loan.dto.LoanStatsResponse;
@@ -38,6 +40,12 @@ class LoanServiceTest {
 
     @Mock
     private CreditRiskService creditRiskService;
+
+    @Mock
+    private RepaymentScheduleService repaymentScheduleService;
+
+    @Mock
+    private NotificationService notificationService;
 
     @InjectMocks
     private LoanService loanService;

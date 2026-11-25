@@ -8,6 +8,9 @@ import com.finguard.finguard_api.loan.dto.CreateLoanRequest;
 import com.finguard.finguard_api.loan.dto.LoanResponse;
 import com.finguard.finguard_api.loan.dto.LoanStatsResponse;
 import com.finguard.finguard_api.loan.dto.ReviewLoanRequest;
+import com.finguard.finguard_api.notification.NotificationService;
+import com.finguard.finguard_api.notification.NotificationType;
+import com.finguard.finguard_api.repayment.RepaymentScheduleService;
 import com.finguard.finguard_api.user.Role;
 import com.finguard.finguard_api.user.User;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,8 @@ public class LoanService {
     private final LoanRepository loanRepository;
     private final AuditLogService auditLogService;
     private final CreditRiskService creditRiskService;
+    private final RepaymentScheduleService repaymentScheduleService;
+    private final NotificationService notificationService;
 
     @Transactional
     @Caching(evict = {
@@ -38,17 +43,26 @@ public class LoanService {
             @CacheEvict(value = CacheConfig.CACHE_LOAN_STATS, allEntries = true)
     })
     public LoanResponse submitLoan(CreateLoanRequest request, User loanOfficer) {
+        Integer term = request.termMonths() != null ? request.termMonths() : request.repaymentMonths();
+        BigDecimal rate = request.interestRate() != null ? request.interestRate() : new BigDecimal("12.00");
+
         LoanApplication loan = LoanApplication.builder()
                 .borrowerName(request.borrowerName())
                 .borrowerNationalId(request.borrowerNationalId())
                 .monthlyIncome(request.monthlyIncome())
                 .existingMonthlyDebt(request.existingMonthlyDebt())
                 .requestedAmount(request.requestedAmount())
-                .repaymentMonths(request.repaymentMonths())
+                .repaymentMonths(term)
+                .termMonths(term)
+                .interestRate(rate)
                 .purpose(request.purpose())
                 .status(LoanStatus.PENDING)
                 .submittedBy(loanOfficer)
                 .build();
+
+        if (loanOfficer.getRole() == Role.BORROWER || loanOfficer.getRole() == Role.USER) {
+            loan.setBorrower(loanOfficer);
+        }
 
         RiskAssessmentResponse risk = creditRiskService.assessRisk(loan);
         loan.setAiRiskScore(risk.riskScore());
@@ -65,6 +79,15 @@ public class LoanService {
                 "Submitted loan for " + saved.getBorrowerName()
                         + " (Amount: " + saved.getRequestedAmount()
                         + ", AI Risk: " + saved.getAiRiskLevel() + " [" + saved.getAiRiskScore() + "])"
+        );
+
+        User borrowerRecipient = saved.getBorrower() != null ? saved.getBorrower() : loanOfficer;
+        notificationService.sendNotification(
+                borrowerRecipient,
+                NotificationType.LOAN_CREATED,
+                "Loan Application Submitted",
+                "Your loan application #" + saved.getId() + " for KES " + saved.getRequestedAmount() + " has been received and scored.",
+                saved.getId()
         );
 
         return LoanResponse.from(saved);
@@ -98,6 +121,10 @@ public class LoanService {
 
         LoanApplication updated = loanRepository.save(loan);
 
+        if (request.newStatus() == LoanStatus.APPROVED) {
+            repaymentScheduleService.generateSchedule(updated);
+        }
+
         auditLogService.record(
                 "LOAN_" + updated.getStatus().name(),
                 "LOAN_APPLICATION",
@@ -105,6 +132,25 @@ public class LoanService {
                 analyst,
                 "Status changed from " + previousStatus + " to " + updated.getStatus() + ". Notes: " + request.reviewerNotes()
         );
+
+        User borrowerRecipient = updated.getBorrower() != null ? updated.getBorrower() : updated.getSubmittedBy();
+        notificationService.sendNotification(
+                borrowerRecipient,
+                NotificationType.LOAN_STATUS_CHANGED,
+                "Loan Application " + updated.getStatus(),
+                "Your loan application #" + updated.getId() + " status is now " + updated.getStatus() + (request.reviewerNotes() != null ? ". Notes: " + request.reviewerNotes() : ""),
+                updated.getId()
+        );
+
+        if (updated.getSubmittedBy().getRole() == Role.LOAN_OFFICER && !updated.getSubmittedBy().getId().equals(analyst.getId())) {
+            notificationService.sendNotification(
+                    updated.getSubmittedBy(),
+                    NotificationType.LOAN_STATUS_CHANGED,
+                    "Loan Submission " + updated.getStatus(),
+                    "Loan application #" + updated.getId() + " (" + updated.getBorrowerName() + ") was " + updated.getStatus().name().toLowerCase() + " by " + analyst.getEmail(),
+                    updated.getId()
+            );
+        }
 
         return LoanResponse.from(updated);
     }
@@ -126,24 +172,46 @@ public class LoanService {
     }
 
     @Transactional(readOnly = true)
+    public Page<LoanResponse> getBorrowerLoans(User borrower, Pageable pageable) {
+        return loanRepository.findByBorrowerIdOrSubmittedByIdOrderByCreatedAtDesc(borrower.getId(), borrower.getId(), pageable)
+                .map(LoanResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public LoanResponse getBorrowerLoanById(Long loanId, User borrower) {
+        LoanApplication loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanId));
+
+        boolean isSubmitter = loan.getSubmittedBy().getId().equals(borrower.getId());
+        boolean isBorrower = loan.getBorrower() != null && loan.getBorrower().getId().equals(borrower.getId());
+        if (!isSubmitter && !isBorrower) {
+            throw new AccessDeniedException("You are not authorized to view this loan application.");
+        }
+        return LoanResponse.from(loan);
+    }
+
+    @Transactional(readOnly = true)
     @Cacheable(value = CacheConfig.CACHE_LOAN_DETAILS, key = "#loanId + '_' + #currentUser.id")
     public LoanResponse getLoanById(Long loanId, User currentUser) {
         LoanApplication loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanId));
 
-        // IDOR protection: Loan Officers and Borrowers can only view loans they submitted
-        if ((currentUser.getRole() == Role.LOAN_OFFICER || currentUser.getRole() == Role.USER)
-                && !loan.getSubmittedBy().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("You are not authorized to view another officer's loan application.");
+        // IDOR protection: Loan Officers and Borrowers can only view loans they submitted or where they are the borrower
+        if (currentUser.getRole() == Role.LOAN_OFFICER || currentUser.getRole() == Role.USER || currentUser.getRole() == Role.BORROWER) {
+            boolean isSubmitter = loan.getSubmittedBy().getId().equals(currentUser.getId());
+            boolean isBorrower = loan.getBorrower() != null && loan.getBorrower().getId().equals(currentUser.getId());
+            if (!isSubmitter && !isBorrower) {
+                throw new AccessDeniedException("You are not authorized to view this loan application.");
+            }
         }
 
         return LoanResponse.from(loan);
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = CacheConfig.CACHE_LOAN_STATS, key = "#currentUser.role.name() == 'USER' ? 'user_' + #currentUser.id : 'global'")
+    @Cacheable(value = CacheConfig.CACHE_LOAN_STATS, key = "(#currentUser.role.name() == 'USER' || #currentUser.role.name() == 'BORROWER') ? 'user_' + #currentUser.id : 'global'")
     public LoanStatsResponse getLoanStats(User currentUser) {
-        boolean isBorrower = currentUser.getRole() == Role.USER;
+        boolean isBorrower = currentUser.getRole() == Role.USER || currentUser.getRole() == Role.BORROWER;
         Long userId = currentUser.getId();
 
         BigDecimal totalVolume = isBorrower

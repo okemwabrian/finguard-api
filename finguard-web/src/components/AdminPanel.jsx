@@ -1,5 +1,19 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, Users, ShieldAlert, CheckCircle2, AlertCircle, Pencil, Trash2, X, Eye, EyeOff } from 'lucide-react';
+import {
+  UserPlus,
+  Users,
+  ShieldAlert,
+  CheckCircle2,
+  AlertCircle,
+  Pencil,
+  Trash2,
+  X,
+  Eye,
+  EyeOff,
+  Download,
+  FileSpreadsheet,
+  FileText
+} from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { TableRowSkeleton } from './SkeletonLoader';
@@ -96,6 +110,28 @@ export default function AdminPanel() {
     }
   };
 
+  const handleExport = async (type, format) => {
+    try {
+      setError('');
+      const url =
+        type === 'portfolio'
+          ? `/api/reports/portfolio/export?format=${format}`
+          : `/api/reports/audit/export?format=${format}`;
+
+      const response = await api.get(url, { responseType: 'blob' });
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', `finguard-${type}-report.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setSuccess(`Downloaded ${type} report in ${format.toUpperCase()} format.`);
+    } catch (err) {
+      setError(`Failed to export ${type} report: ` + (err.response?.data?.message || err.message));
+    }
+  };
+
   return (
     <div className="space-y-6">
       {error && (
@@ -110,6 +146,73 @@ export default function AdminPanel() {
           <span>{success}</span>
         </div>
       )}
+
+      {/* Compliance & Portfolio Reports Export */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+        <div>
+          <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+            <Download className="w-5 h-5 text-indigo-600" />
+            <span>Compliance & Portfolio Reports Export</span>
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Generate and stream real-time CSV spreadsheets and audit-ready PDF documents
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <span>Portfolio Summary</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">Underwriting volume, risk distribution, and loan ledger</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleExport('portfolio', 'csv')}
+                className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200 transition cursor-pointer"
+              >
+                CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExport('portfolio', 'pdf')}
+                className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200 transition cursor-pointer"
+              >
+                PDF
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-indigo-600" />
+                <span>Audit & Compliance Trail</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">Immutable record of all staff status changes & decisions</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleExport('audit', 'csv')}
+                className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200 transition cursor-pointer"
+              >
+                CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExport('audit', 'pdf')}
+                className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200 transition cursor-pointer"
+              >
+                PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Create User Form */}
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">

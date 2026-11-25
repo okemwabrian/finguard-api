@@ -14,21 +14,31 @@ public interface LoanRepository extends JpaRepository<LoanApplication, Long> {
     Page<LoanApplication> findBySubmittedByIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
     Page<LoanApplication> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
+    Page<LoanApplication> findByBorrowerIdOrSubmittedByIdOrderByCreatedAtDesc(Long borrowerId, Long submittedById, Pageable pageable);
+    Page<LoanApplication> findByDelinquentTrueOrderByCreatedAtDesc(Pageable pageable);
+    long countByDelinquentTrue();
+
     @Query("SELECT COALESCE(SUM(l.requestedAmount), 0) FROM LoanApplication l")
     BigDecimal sumTotalRequestedAmount();
 
-    @Query("SELECT COALESCE(SUM(l.requestedAmount), 0) FROM LoanApplication l WHERE l.submittedBy.id = :userId")
+    @Query("SELECT COALESCE(SUM(l.requestedAmount), 0) FROM LoanApplication l WHERE l.submittedBy.id = :userId OR (l.borrower IS NOT NULL AND l.borrower.id = :userId)")
     BigDecimal sumTotalRequestedAmountByUserId(@Param("userId") Long userId);
 
     @Query("SELECT l.status, COUNT(l) FROM LoanApplication l GROUP BY l.status")
     List<Object[]> countByStatusGrouped();
 
-    @Query("SELECT l.status, COUNT(l) FROM LoanApplication l WHERE l.submittedBy.id = :userId GROUP BY l.status")
+    @Query("SELECT l.status, COUNT(l) FROM LoanApplication l WHERE l.submittedBy.id = :userId OR (l.borrower IS NOT NULL AND l.borrower.id = :userId) GROUP BY l.status")
     List<Object[]> countByStatusGroupedByUserId(@Param("userId") Long userId);
 
     @Query("SELECT l.aiRiskLevel, COUNT(l) FROM LoanApplication l GROUP BY l.aiRiskLevel")
     List<Object[]> countByAiRiskLevelGrouped();
 
-    @Query("SELECT l.aiRiskLevel, COUNT(l) FROM LoanApplication l WHERE l.submittedBy.id = :userId GROUP BY l.aiRiskLevel")
+    @Query("SELECT l.aiRiskLevel, COUNT(l) FROM LoanApplication l WHERE l.submittedBy.id = :userId OR (l.borrower IS NOT NULL AND l.borrower.id = :userId) GROUP BY l.aiRiskLevel")
     List<Object[]> countByAiRiskLevelGroupedByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT FUNCTION('TO_CHAR', l.createdAt, 'YYYY-MM') as month, COUNT(l), COALESCE(SUM(l.requestedAmount), 0) FROM LoanApplication l GROUP BY FUNCTION('TO_CHAR', l.createdAt, 'YYYY-MM') ORDER BY month DESC")
+    List<Object[]> findMonthlyOriginationVolume();
+
+    @Query("SELECT l.aiRiskLevel, l.status, COUNT(l) FROM LoanApplication l WHERE l.aiRiskLevel IS NOT NULL GROUP BY l.aiRiskLevel, l.status")
+    List<Object[]> countByRiskLevelAndStatusGrouped();
 }

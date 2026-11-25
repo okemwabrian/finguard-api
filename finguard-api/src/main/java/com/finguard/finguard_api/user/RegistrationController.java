@@ -1,5 +1,6 @@
 package com.finguard.finguard_api.user;
 
+import com.finguard.finguard_api.audit.AuditLogService;
 import com.finguard.finguard_api.security.JwtService;
 import com.finguard.finguard_api.user.dto.RegisterRequest;
 import jakarta.validation.Valid;
@@ -19,6 +20,7 @@ public class RegistrationController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final AuditLogService auditLogService;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerBorrower(@Valid @RequestBody RegisterRequest request) {
@@ -31,7 +33,9 @@ public class RegistrationController {
                 .fullName(request.fullName())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .role(Role.USER)
+                .role(Role.BORROWER)
+                .phone(request.phone())
+                .nationalId(request.nationalId())
                 .mustChangePassword(false)
                 .active(true)
                 .build();
@@ -39,11 +43,21 @@ public class RegistrationController {
         User saved = userRepository.save(borrower);
         String token = jwtService.generateToken(saved);
 
+        auditLogService.record(
+                "USER_REGISTERED",
+                "USER",
+                saved.getId(),
+                saved,
+                "Borrower registered: " + saved.getEmail()
+        );
+
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
                 "token", token,
                 "email", saved.getEmail(),
                 "fullName", saved.getFullName(),
                 "role", saved.getRole().name(),
+                "phone", saved.getPhone() != null ? saved.getPhone() : "",
+                "nationalId", saved.getNationalId() != null ? saved.getNationalId() : "",
                 "mustChangePassword", false
         ));
     }

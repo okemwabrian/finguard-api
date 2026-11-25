@@ -1,6 +1,7 @@
-import { LogOut, ShieldCheck, Users, Shield, FileText, ClipboardCheck } from 'lucide-react';
+import { LogOut, ShieldCheck, Users, Shield, FileText, ClipboardCheck, Sparkles, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 
 export default function Navbar({ activeTab, setActiveTab }) {
   const { user, logout } = useAuth();
@@ -20,13 +21,26 @@ export default function Navbar({ activeTab, setActiveTab }) {
 
   const navItems = {
     ADMIN: [
-      { id: 'staff', label: 'Staff CRUD', icon: Users },
+      { id: 'staff', label: 'Staff Management', icon: Users },
       { id: 'audit', label: 'Audit Logs', icon: Shield },
+      { id: 'repayments', label: 'Repayments', icon: CreditCard },
+      { id: 'analytics', label: 'AI Analytics', icon: Sparkles },
     ],
-    LOAN_OFFICER: [{ id: 'loans', label: 'Loan Origination', icon: FileText }],
-    USER: [{ id: 'loans', label: 'My Loan Portal', icon: FileText }],
-    CREDIT_ANALYST: [{ id: 'queue', label: 'Underwriting Queue', icon: ClipboardCheck }],
-    AUDITOR: [{ id: 'audit', label: 'Compliance Logs', icon: Shield }],
+    LOAN_OFFICER: [
+      { id: 'loans', label: 'Loan Origination', icon: FileText },
+      { id: 'repayments', label: 'Repayments', icon: CreditCard },
+      { id: 'analytics', label: 'AI Analytics', icon: Sparkles },
+    ],
+    CREDIT_ANALYST: [
+      { id: 'queue', label: 'Underwriting Queue', icon: ClipboardCheck },
+      { id: 'repayments', label: 'Repayments', icon: CreditCard },
+      { id: 'analytics', label: 'AI Analytics', icon: Sparkles },
+    ],
+    AUDITOR: [
+      { id: 'audit', label: 'Compliance Logs', icon: Shield },
+      { id: 'repayments', label: 'Repayments', icon: CreditCard },
+      { id: 'analytics', label: 'AI Analytics', icon: Sparkles },
+    ],
   }[user?.role] || [];
 
   return (
@@ -62,6 +76,8 @@ export default function Navbar({ activeTab, setActiveTab }) {
 
         {/* User Profile & Logout */}
         <div className="flex items-center gap-3">
+          <NotificationBell />
+
           <div className="hidden sm:flex items-center gap-2.5 pr-3 border-r border-slate-200">
             <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
               {initials}

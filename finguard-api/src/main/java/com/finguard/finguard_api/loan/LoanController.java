@@ -24,7 +24,7 @@ public class LoanController {
     private final LoanService loanService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('LOAN_OFFICER', 'USER')")
+    @PreAuthorize("hasAnyRole('LOAN_OFFICER', 'USER', 'BORROWER')")
     public ResponseEntity<LoanResponse> submitLoan(
             @Valid @RequestBody CreateLoanRequest request,
             @AuthenticationPrincipal User currentUser
@@ -44,7 +44,7 @@ public class LoanController {
     }
 
     @GetMapping("/my-submissions")
-    @PreAuthorize("hasAnyRole('LOAN_OFFICER', 'USER')")
+    @PreAuthorize("hasAnyRole('LOAN_OFFICER', 'USER', 'BORROWER')")
     public ResponseEntity<Page<LoanResponse>> getMyLoans(
             @AuthenticationPrincipal User currentUser,
             @PageableDefault(size = 15) Pageable pageable
@@ -53,7 +53,7 @@ public class LoanController {
     }
 
     @GetMapping("/stats")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CREDIT_ANALYST', 'AUDITOR', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CREDIT_ANALYST', 'AUDITOR', 'USER', 'BORROWER')")
     public ResponseEntity<LoanStatsResponse> getLoanStats(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(loanService.getLoanStats(currentUser));
     }
@@ -68,7 +68,7 @@ public class LoanController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CREDIT_ANALYST', 'AUDITOR', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'LOAN_OFFICER', 'CREDIT_ANALYST', 'AUDITOR', 'USER', 'BORROWER')")
     public ResponseEntity<LoanResponse> getLoanById(
             @PathVariable Long id,
             @AuthenticationPrincipal User currentUser

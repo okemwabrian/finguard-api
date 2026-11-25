@@ -36,6 +36,12 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
+    @Column(length = 30)
+    private String phone;
+
+    @Column(length = 50)
+    private String nationalId;
+
     @Builder.Default
     @Column(nullable = false)
     private boolean mustChangePassword = true;

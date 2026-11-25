@@ -9,7 +9,9 @@ public record UserResponse(
         String email,
         Role role,
         boolean mustChangePassword,
-        boolean active
+        boolean active,
+        String phone,
+        String nationalId
 ) {
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -18,7 +20,9 @@ public record UserResponse(
                 user.getEmail(),
                 user.getRole(),
                 user.isMustChangePassword(),
-                user.isActive()
+                user.isActive(),
+                user.getPhone(),
+                user.getNationalId()
         );
     }
 }

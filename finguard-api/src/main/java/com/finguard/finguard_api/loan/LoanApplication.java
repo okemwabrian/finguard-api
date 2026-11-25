@@ -42,6 +42,17 @@ public class LoanApplication {
     @Column(nullable = false)
     private Integer repaymentMonths;
 
+    @Column
+    private Integer termMonths;
+
+    @Builder.Default
+    @Column(precision = 5, scale = 2)
+    private BigDecimal interestRate = new BigDecimal("12.00");
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean delinquent = false;
+
     @Column(nullable = false, length = 500)
     private String purpose;
 
@@ -65,6 +76,10 @@ public class LoanApplication {
     private User submittedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "borrower_id")
+    private User borrower;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewed_by_id")
     private User reviewedBy;
 
@@ -75,12 +90,25 @@ public class LoanApplication {
 
     @PrePersist
     protected void onCreate() {
+        if (this.termMonths == null && this.repaymentMonths != null) {
+            this.termMonths = this.repaymentMonths;
+        } else if (this.repaymentMonths == null && this.termMonths != null) {
+            this.repaymentMonths = this.termMonths;
+        }
+        if (this.interestRate == null) {
+            this.interestRate = new BigDecimal("12.00");
+        }
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        if (this.termMonths == null && this.repaymentMonths != null) {
+            this.termMonths = this.repaymentMonths;
+        } else if (this.repaymentMonths == null && this.termMonths != null) {
+            this.repaymentMonths = this.termMonths;
+        }
         this.updatedAt = LocalDateTime.now();
     }
 }

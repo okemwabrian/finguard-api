@@ -22,6 +22,8 @@ export default function Login() {
       const userData = await login(email, password);
       if (userData.mustChangePassword) {
         navigate('/change-password');
+      } else if (userData.role === 'BORROWER' || userData.role === 'USER') {
+        navigate('/portal');
       } else {
         navigate('/dashboard');
       }

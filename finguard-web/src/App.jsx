@@ -6,11 +6,28 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
+import BorrowerDashboard from './pages/BorrowerDashboard';
+import BorrowerLoanApply from './pages/BorrowerLoanApply';
+import BorrowerLoanDetail from './pages/BorrowerLoanDetail';
+import BorrowerRepayments from './pages/BorrowerRepayments';
 
-function ProtectedRoute({ children }) {
+function StaffRoute({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
+  if (user.role === 'BORROWER' || user.role === 'USER') {
+    return <Navigate to="/portal" replace />;
+  }
+  return children;
+}
+
+function BorrowerRoute({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.mustChangePassword) return <Navigate to="/change-password" replace />;
+  if (user.role !== 'BORROWER' && user.role !== 'USER') {
+    return <Navigate to="/dashboard" replace />;
+  }
   return children;
 }
 
@@ -26,14 +43,51 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/change-password" element={<ChangePassword />} />
+
+            {/* Staff Console */}
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <StaffRoute>
                   <Dashboard />
-                </ProtectedRoute>
+                </StaffRoute>
               }
             />
+
+            {/* Borrower Portal */}
+            <Route
+              path="/portal"
+              element={
+                <BorrowerRoute>
+                  <BorrowerDashboard />
+                </BorrowerRoute>
+              }
+            />
+            <Route
+              path="/portal/apply"
+              element={
+                <BorrowerRoute>
+                  <BorrowerLoanApply />
+                </BorrowerRoute>
+              }
+            />
+            <Route
+              path="/portal/loans/:id"
+              element={
+                <BorrowerRoute>
+                  <BorrowerLoanDetail />
+                </BorrowerRoute>
+              }
+            />
+            <Route
+              path="/portal/repayments"
+              element={
+                <BorrowerRoute>
+                  <BorrowerRepayments />
+                </BorrowerRoute>
+              }
+            />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

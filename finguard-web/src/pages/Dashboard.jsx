@@ -7,6 +7,8 @@ import AdminPanel from '../components/AdminPanel';
 import LoanOfficerPanel from '../components/LoanOfficerPanel';
 import CreditAnalystPanel from '../components/CreditAnalystPanel';
 import AuditorPanel from '../components/AuditorPanel';
+import AnalyticsPanel from '../components/AnalyticsPanel';
+import RepaymentsPanel from '../components/RepaymentsPanel';
 import api from '../api/axios';
 
 export default function Dashboard() {
@@ -47,18 +49,18 @@ export default function Dashboard() {
         {/* Top KPI Metrics Cards */}
         <KpiSummaryCards stats={stats} loading={statsLoading} />
 
-        {/* Gemini AI Risk Distribution Meter & Insights */}
-        <RiskDistributionChart stats={stats} loading={statsLoading} />
+        {/* Gemini AI Risk Distribution Meter & Insights (shown on primary workflow tabs) */}
+        {(activeTab === 'loans' || activeTab === 'queue' || activeTab === 'staff') && (
+          <RiskDistributionChart stats={stats} loading={statsLoading} />
+        )}
 
-        {/* Role-Specific Workflows & Panels */}
-        {user?.role === 'ADMIN' && (activeTab === 'staff' ? <AdminPanel /> : <AuditorPanel />)}
-        {(user?.role === 'LOAN_OFFICER' || user?.role === 'USER') && (
-          <LoanOfficerPanel onLoanSubmitted={fetchStats} />
-        )}
-        {user?.role === 'CREDIT_ANALYST' && (
-          <CreditAnalystPanel onDecisionMade={fetchStats} />
-        )}
-        {user?.role === 'AUDITOR' && <AuditorPanel />}
+        {/* Dynamic Workflow Panels */}
+        {activeTab === 'analytics' && <AnalyticsPanel />}
+        {activeTab === 'repayments' && <RepaymentsPanel />}
+        {activeTab === 'staff' && <AdminPanel />}
+        {activeTab === 'audit' && <AuditorPanel />}
+        {activeTab === 'loans' && <LoanOfficerPanel onLoanSubmitted={fetchStats} />}
+        {activeTab === 'queue' && <CreditAnalystPanel onDecisionMade={fetchStats} />}
       </main>
     </div>
   );
