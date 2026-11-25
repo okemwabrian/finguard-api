@@ -2,6 +2,9 @@ package com.finguard.finguard_api.user;
 
 import com.finguard.finguard_api.audit.AuditLogService;
 import com.finguard.finguard_api.config.CacheConfig;
+import com.finguard.finguard_api.document.LoanDocumentRepository;
+import com.finguard.finguard_api.loan.LoanRepository;
+import com.finguard.finguard_api.notification.NotificationRepository;
 import com.finguard.finguard_api.user.dto.CreateUserRequest;
 import com.finguard.finguard_api.user.dto.UpdateUserRequest;
 import com.finguard.finguard_api.user.dto.UpdateUserStatusRequest;
@@ -15,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +33,9 @@ public class AdminUserController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+    private final NotificationRepository notificationRepository;
+    private final LoanRepository loanRepository;
+    private final LoanDocumentRepository loanDocumentRepository;
 
     @PostMapping
     @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
@@ -122,6 +129,7 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
     public ResponseEntity<?> deleteUser(
             @PathVariable Long id,
@@ -133,6 +141,17 @@ public class AdminUserController {
 
         User target = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+        if (loanRepository.countBySubmittedById(id) > 0 || loanDocumentRepository.countByUploadedById(id) > 0) {
+            throw new IllegalStateException(
+                    "Cannot delete " + target.getEmail() + " because they have existing loan applications or uploaded documents. Suspend their account instead."
+            );
+        }
+
+        notificationRepository.deleteByRecipientId(id);
+        loanRepository.clearReviewedByUserId(id);
+        loanRepository.clearBorrowerByUserId(id);
+        loanDocumentRepository.clearVerifiedByUserId(id);
 
         userRepository.delete(target);
         auditLogService.record("USER_DELETED", "USER", id, admin,
@@ -153,7 +172,7 @@ public class AdminUserController {
 
         String defaultPassword = (body != null && body.get("defaultPassword") != null && !body.get("defaultPassword").isBlank())
                 ? body.get("defaultPassword").trim()
-                : "FinGuard@2026";
+                : "1234";
 
         target.setPassword(passwordEncoder.encode(defaultPassword));
         target.setMustChangePassword(true);

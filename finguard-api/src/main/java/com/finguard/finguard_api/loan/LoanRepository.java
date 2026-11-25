@@ -3,6 +3,7 @@ package com.finguard.finguard_api.loan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -41,4 +42,14 @@ public interface LoanRepository extends JpaRepository<LoanApplication, Long> {
 
     @Query("SELECT l.aiRiskLevel, l.status, COUNT(l) FROM LoanApplication l WHERE l.aiRiskLevel IS NOT NULL GROUP BY l.aiRiskLevel, l.status")
     List<Object[]> countByRiskLevelAndStatusGrouped();
+
+    long countBySubmittedById(Long submittedById);
+
+    @Modifying
+    @Query("UPDATE LoanApplication l SET l.reviewedBy = null WHERE l.reviewedBy.id = :userId")
+    void clearReviewedByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("UPDATE LoanApplication l SET l.borrower = null WHERE l.borrower.id = :userId")
+    void clearBorrowerByUserId(@Param("userId") Long userId);
 }

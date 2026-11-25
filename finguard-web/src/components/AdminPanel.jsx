@@ -109,12 +109,12 @@ export default function AdminPanel() {
       setSuccess(`Deleted ${staff.email}.`);
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.message || 'Cannot delete user (may have linked loan records).');
+      setError(extractApiError(err, 'Cannot delete user (may have linked loan records).'));
     }
   };
 
   const handleResetPassword = async (staff) => {
-    if (!window.confirm(`Reset password for ${staff.email} to default temporary password (FinGuard@2026)?`)) return;
+    if (!window.confirm(`Reset password for ${staff.email} to default (1234)?`)) return;
     setError('');
     setSuccess('');
     try {
@@ -380,7 +380,7 @@ export default function AdminPanel() {
                           </button>
                           <button
                             onClick={() => handleResetPassword(staff)}
-                            title="Reset Password to Default (FinGuard@2026)"
+                            title="Reset Password to Default (1234)"
                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 transition cursor-pointer"
                           >
                             <KeyRound className="w-3.5 h-3.5" />

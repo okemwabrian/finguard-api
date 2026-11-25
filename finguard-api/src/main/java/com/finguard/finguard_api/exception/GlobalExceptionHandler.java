@@ -1,6 +1,7 @@
 package com.finguard.finguard_api.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -81,6 +82,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ApiErrorResponse.of(400, "FILE_TOO_LARGE", "Uploaded file exceeds maximum allowed limit of 10MB.")
+        );
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ApiErrorResponse.of(409, "DATA_INTEGRITY_VIOLATION", "This record is linked to existing loans or audit records and cannot be deleted. Consider suspending it instead.")
         );
     }
 
