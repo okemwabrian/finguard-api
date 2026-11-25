@@ -12,6 +12,8 @@ import RepaymentsPanel from '../components/RepaymentsPanel';
 import InterestCalculator from '../components/InterestCalculator';
 import ProfilePage from './ProfilePage';
 import api from '../api/axios';
+import BorrowerDirectoryPanel from '../components/BorrowerDirectoryPanel';
+import SiteSettingsPanel from '../components/SiteSettingsPanel';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -44,7 +46,7 @@ export default function Dashboard() {
   }, [fetchStats]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 text-slate-900">
+    <div className="staff-dashboard min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/60 text-slate-900">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-24 md:py-8 space-y-6">
@@ -63,6 +65,8 @@ export default function Dashboard() {
         {activeTab === 'repayments' && <RepaymentsPanel />}
         {activeTab === 'calculator' && <InterestCalculator embedded />}
         {activeTab === 'staff' && <AdminPanel onDataChanged={fetchStats} />}
+        {activeTab === 'site' && user?.role === 'ADMIN' && <SiteSettingsPanel />}
+        {activeTab === 'borrowers' && <BorrowerDirectoryPanel />}
         {activeTab === 'audit' && <AuditorPanel />}
         {activeTab === 'loans' && <LoanOfficerPanel onLoanSubmitted={fetchStats} />}
         {activeTab === 'queue' && <CreditAnalystPanel onDecisionMade={fetchStats} />}

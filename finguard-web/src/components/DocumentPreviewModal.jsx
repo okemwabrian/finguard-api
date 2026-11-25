@@ -55,15 +55,15 @@ export default function DocumentPreviewModal({ loanId, doc, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6">
-      <div className="bg-white rounded-2xl max-w-4xl w-full h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-slate-900/75 dark:bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-4xl w-full h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-4 bg-slate-50">
+        <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-4 bg-slate-50 dark:bg-slate-900">
           <div className="flex items-center gap-2.5 min-w-0">
-            <FileText className="w-5 h-5 text-indigo-600 shrink-0" />
+            <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
             <div className="truncate">
-              <h3 className="text-sm font-bold text-slate-900 truncate">{doc.fileName}</h3>
-              <p className="text-[11px] text-slate-500">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">{doc.fileName}</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {doc.docType} • {doc.verificationStatus}
               </p>
             </div>
@@ -82,7 +82,7 @@ export default function DocumentPreviewModal({ loanId, doc, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700 transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -90,11 +90,11 @@ export default function DocumentPreviewModal({ loanId, doc, onClose }) {
         </div>
 
         {/* Preview Area */}
-        <div className="flex-1 bg-slate-100 flex items-center justify-center overflow-auto p-3">
+        <div className="flex-1 bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-auto p-3">
           {loading ? (
-            <div className="text-xs text-slate-500">Loading document preview...</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Loading document preview...</div>
           ) : error ? (
-            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -108,12 +108,12 @@ export default function DocumentPreviewModal({ loanId, doc, onClose }) {
             <iframe
               src={blobUrl}
               title={doc.fileName}
-              className="w-full h-full rounded-lg border border-slate-200 bg-white"
+              className="w-full h-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
             />
           ) : (
             <div className="text-center space-y-3 p-6">
               <FileText className="w-10 h-10 text-slate-400 mx-auto" />
-              <p className="text-xs text-slate-600">Preview is not available for this file type.</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Preview is not available for this file type.</p>
               <button
                 type="button"
                 onClick={handleDownload}

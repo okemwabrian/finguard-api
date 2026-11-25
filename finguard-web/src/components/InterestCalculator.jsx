@@ -252,7 +252,7 @@ export default function InterestCalculator({ embedded = false }) {
   if (embedded) return content;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors">
       <BorrowerNavbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-24 md:py-8">
         {content}

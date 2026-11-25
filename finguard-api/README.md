@@ -206,7 +206,15 @@ JWT_EXPIRATION_MS=86400000
 GEMINI_API_KEY=your_actual_gemini_api_key
 GEMINI_MODEL=gemini-3.8-flash
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:4200
+MAIL_HOST=smtp.your-provider.com
+MAIL_PORT=587
+MAIL_USERNAME=your_smtp_username
+MAIL_PASSWORD=your_smtp_password
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
 ```
+
+SMTP credentials are required for admin email campaigns. Staff can view active borrower contact details; administrators can send a campaign to selected borrowers. Payment reminders include each borrower's total due/overdue installment amount and earliest due date.
 
 Run tests and start the API:
 ```bash

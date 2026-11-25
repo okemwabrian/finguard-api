@@ -22,6 +22,7 @@ import { TableRowSkeleton } from './SkeletonLoader';
 import { extractApiError } from '../utils/extractErrorMessage';
 import ConfirmModal from './ConfirmModal';
 import AdminUserActivityModal from './AdminUserActivityModal';
+import BulkEmailPanel from './BulkEmailPanel';
 
 export default function AdminPanel({ onDataChanged }) {
   const { user: currentUser } = useAuth();
@@ -270,6 +271,8 @@ export default function AdminPanel({ onDataChanged }) {
           </div>
         </div>
       </div>
+
+      <BulkEmailPanel users={users} />
 
       {/* Create User Form */}
       <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">

@@ -26,8 +26,8 @@ export default function ConfirmModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+    <div className="fixed inset-0 z-[90] bg-slate-900/50 dark:bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className={`p-2.5 rounded-xl shrink-0 ${iconBg[variant] || iconBg.primary}`}>
@@ -38,13 +38,13 @@ export default function ConfirmModal({
               )}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">{title}</h3>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">{message}</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{title}</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{message}</p>
             </div>
           </div>
           <button
             onClick={onCancel}
-            className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -55,7 +55,7 @@ export default function ConfirmModal({
             type="button"
             disabled={loading}
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition cursor-pointer"
+            className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition cursor-pointer"
           >
             {cancelLabel}
           </button>

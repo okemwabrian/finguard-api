@@ -47,7 +47,7 @@ export default function BorrowerDashboard() {
   const correctionLoans = loans.filter((l) => l.status === 'CORRECTION_REQUIRED');
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors">
       <BorrowerNavbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-24 md:py-8 space-y-6">
@@ -56,7 +56,7 @@ export default function BorrowerDashboard() {
           <div>
             <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-1">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>AI-Powered Underwriting</span>
+              <span>Automated Underwriting</span>
             </div>
             <h1 className="text-2xl font-bold">Welcome back, {user?.fullName}!</h1>
             <p className="text-slate-300 text-sm mt-1 max-w-xl">
