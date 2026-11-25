@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShieldCheck, LayoutDashboard, PlusCircle, CreditCard, Sparkles, User, LogOut, Menu, X } from 'lucide-react';
+import { ShieldCheck, LayoutDashboard, PlusCircle, CreditCard, Sparkles, Calculator, User, Sun, Moon, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import NotificationBell from './NotificationBell';
 
 export default function BorrowerNavbar() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -19,6 +21,7 @@ export default function BorrowerNavbar() {
     { to: '/portal', label: 'My Loans', icon: LayoutDashboard },
     { to: '/portal/apply', label: 'Apply', icon: PlusCircle },
     { to: '/portal/repayments', label: 'Repayments', icon: CreditCard },
+    { to: '/portal/calculator', label: 'Calculator', icon: Calculator },
     { to: '/portal/assistant', label: 'Assistant', icon: Sparkles },
     { to: '/portal/profile', label: 'Profile', icon: User },
   ];
@@ -68,8 +71,16 @@ export default function BorrowerNavbar() {
             </nav>
           </div>
 
-          {/* Right Actions: Notifications, Profile & Mobile Toggle */}
+          {/* Right Actions: Theme, Notifications, Profile & Mobile Toggle */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+            </button>
             <NotificationBell />
 
             <Link

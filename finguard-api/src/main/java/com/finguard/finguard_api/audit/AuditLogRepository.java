@@ -12,6 +12,7 @@ import java.util.List;
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
     Page<AuditLog> findByEntityIdOrderByTimestampDesc(Long entityId, Pageable pageable);
     Page<AuditLog> findAllByOrderByTimestampDesc(Pageable pageable);
+    List<AuditLog> findTop30ByPerformedByEmailOrderByTimestampDesc(String email);
 
     @Query("SELECT a FROM AuditLog a WHERE " +
            "(:from IS NULL OR a.timestamp >= :from) AND " +

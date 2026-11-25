@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -12,6 +14,7 @@ import BorrowerLoanDetail from './pages/BorrowerLoanDetail';
 import BorrowerRepayments from './pages/BorrowerRepayments';
 import UserAssistantPage from './pages/UserAssistantPage';
 import ProfilePage from './pages/ProfilePage';
+import InterestCalculator from './components/InterestCalculator';
 
 function StaffRoute({ children }) {
   const { user } = useAuth();
@@ -37,10 +40,12 @@ export default function App() {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy_client_id.apps.googleusercontent.com';
 
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
+    <ThemeProvider>
+      <ToastProvider>
+        <GoogleOAuthProvider clientId={googleClientId}>
+          <AuthProvider>
+            <BrowserRouter>
+              <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -105,11 +110,21 @@ export default function App() {
                 </BorrowerRoute>
               }
             />
+            <Route
+              path="/portal/calculator"
+              element={
+                <BorrowerRoute>
+                  <InterestCalculator />
+                </BorrowerRoute>
+              }
+            />
 
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </GoogleOAuthProvider>
+              </Routes>
+            </BrowserRouter>
+          </AuthProvider>
+        </GoogleOAuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

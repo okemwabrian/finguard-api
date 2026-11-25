@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { LogOut, ShieldCheck, Users, Shield, FileText, ClipboardCheck, Sparkles, CreditCard, User, Menu, X } from 'lucide-react';
+import { LogOut, ShieldCheck, Users, Shield, FileText, ClipboardCheck, Sparkles, CreditCard, User, Calculator, Sun, Moon, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
 
 export default function Navbar({ activeTab, setActiveTab }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -26,6 +28,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
       { id: 'staff', label: 'Users', icon: Users },
       { id: 'queue', label: 'All Loans', icon: ClipboardCheck },
       { id: 'repayments', label: 'Repayments', icon: CreditCard },
+      { id: 'calculator', label: 'Calculator', icon: Calculator },
       { id: 'audit', label: 'Audit', icon: Shield },
       { id: 'analytics', label: 'Analytics', icon: Sparkles },
       { id: 'profile', label: 'Profile', icon: User },
@@ -33,18 +36,21 @@ export default function Navbar({ activeTab, setActiveTab }) {
     LOAN_OFFICER: [
       { id: 'loans', label: 'Loans', icon: FileText },
       { id: 'repayments', label: 'Repayments', icon: CreditCard },
+      { id: 'calculator', label: 'Calculator', icon: Calculator },
       { id: 'analytics', label: 'Analytics', icon: Sparkles },
       { id: 'profile', label: 'Profile', icon: User },
     ],
     CREDIT_ANALYST: [
       { id: 'queue', label: 'Queue', icon: ClipboardCheck },
       { id: 'repayments', label: 'Repayments', icon: CreditCard },
+      { id: 'calculator', label: 'Calculator', icon: Calculator },
       { id: 'analytics', label: 'Analytics', icon: Sparkles },
       { id: 'profile', label: 'Profile', icon: User },
     ],
     AUDITOR: [
       { id: 'audit', label: 'Audit', icon: Shield },
       { id: 'repayments', label: 'Repayments', icon: CreditCard },
+      { id: 'calculator', label: 'Calculator', icon: Calculator },
       { id: 'analytics', label: 'Analytics', icon: Sparkles },
       { id: 'profile', label: 'Profile', icon: User },
     ],
@@ -87,8 +93,16 @@ export default function Navbar({ activeTab, setActiveTab }) {
             </nav>
           </div>
 
-          {/* User Profile, Notifications & Mobile Hamburger */}
+          {/* User Profile, Theme Toggle, Notifications & Mobile Hamburger */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
+            </button>
             <NotificationBell />
 
             <button

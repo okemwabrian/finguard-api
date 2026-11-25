@@ -17,11 +17,15 @@ import {
 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { TableRowSkeleton } from './SkeletonLoader';
 import { extractApiError } from '../utils/extractErrorMessage';
+import ConfirmModal from './ConfirmModal';
+import AdminUserActivityModal from './AdminUserActivityModal';
 
-export default function AdminPanel() {
+export default function AdminPanel({ onDataChanged }) {
   const { user: currentUser } = useAuth();
+  const { showToast } = useToast();
   const [users, setUsers] = useState([]);
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
@@ -29,6 +33,9 @@ export default function AdminPanel() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [editingUser, setEditingUser] = useState(null);
+  const [inspectingUserId, setInspectingUserId] = useState(null);
+  const [confirmState, setConfirmState] = useState({ isOpen: false });
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const [showTempPassword, setShowTempPassword] = useState(false);
 
   const [form, setForm] = useState({
@@ -100,32 +107,64 @@ export default function AdminPanel() {
     }
   };
 
-  const handleDelete = async (staff) => {
-    if (!window.confirm(`Permanently delete ${staff.email}?`)) return;
-    setError('');
-    setSuccess('');
-    try {
-      await api.delete(`/api/admin/users/${staff.id}`);
-      setSuccess(`Deleted ${staff.email}.`);
-      fetchUsers();
-    } catch (err) {
-      setError(extractApiError(err, 'Cannot delete user (may have linked loan records).'));
-    }
+  const handleDelete = (staff) => {
+    setConfirmState({
+      isOpen: true,
+      title: `Delete ${staff.email}?`,
+      message:
+        'This will permanently delete this user account and any loans/documents they submitted. Audit logs remain intact. This action cannot be undone.',
+      confirmLabel: 'Delete User',
+      variant: 'danger',
+      onConfirm: async () => {
+        setConfirmLoading(true);
+        setError('');
+        setSuccess('');
+        try {
+          await api.delete(`/api/admin/users/${staff.id}`);
+          const msg = `Deleted ${staff.email} and updated portfolio totals.`;
+          setSuccess(msg);
+          showToast(msg, 'success');
+          fetchUsers();
+          if (onDataChanged) onDataChanged();
+        } catch (err) {
+          const msg = extractApiError(err, 'Failed to delete user.');
+          setError(msg);
+          showToast(msg, 'error');
+        } finally {
+          setConfirmLoading(false);
+          setConfirmState({ isOpen: false });
+        }
+      },
+    });
   };
 
-  const handleResetPassword = async (staff) => {
-    if (!window.confirm(`Reset password for ${staff.email} to default (1234)?`)) return;
-    setError('');
-    setSuccess('');
-    try {
-      const { data } = await api.post(`/api/admin/users/${staff.id}/reset-password`);
-      setSuccess(
-        `Password for ${staff.email} reset to default: "${data.defaultPassword}". They will be prompted to change it on next login.`
-      );
-      fetchUsers();
-    } catch (err) {
-      setError(extractApiError(err, 'Failed to reset password.'));
-    }
+  const handleResetPassword = (staff) => {
+    setConfirmState({
+      isOpen: true,
+      title: `Reset Password for ${staff.fullName}?`,
+      message: `This will reset ${staff.email}'s password to the default "1234", unlock the account, and require a password change on next login.`,
+      confirmLabel: 'Reset to 1234',
+      variant: 'warning',
+      onConfirm: async () => {
+        setConfirmLoading(true);
+        setError('');
+        setSuccess('');
+        try {
+          const { data } = await api.post(`/api/admin/users/${staff.id}/reset-password`);
+          const msg = `Password for ${staff.email} reset to "${data.defaultPassword}".`;
+          setSuccess(msg);
+          showToast(msg, 'success');
+          fetchUsers();
+        } catch (err) {
+          const msg = extractApiError(err, 'Failed to reset password.');
+          setError(msg);
+          showToast(msg, 'error');
+        } finally {
+          setConfirmLoading(false);
+          setConfirmState({ isOpen: false });
+        }
+      },
+    });
   };
 
   const handleExport = async (type, format) => {
@@ -372,6 +411,14 @@ export default function AdminPanel() {
                       {staff.email !== currentUser?.email ? (
                         <div className="inline-flex items-center gap-1.5">
                           <button
+                            onClick={() => setInspectingUserId(staff.id)}
+                            title="Inspect User Activity, Documents & Edit Loans"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span className="hidden lg:inline">Inspect</span>
+                          </button>
+                          <button
                             onClick={() => setEditingUser({ ...staff })}
                             title="Edit User"
                             className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
@@ -481,6 +528,25 @@ export default function AdminPanel() {
             </form>
           </div>
         </div>
+      )}
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmLabel={confirmState.confirmLabel}
+        variant={confirmState.variant}
+        loading={confirmLoading}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState({ isOpen: false })}
+      />
+
+      {inspectingUserId && (
+        <AdminUserActivityModal
+          userId={inspectingUserId}
+          onClose={() => setInspectingUserId(null)}
+          onDataChanged={onDataChanged}
+        />
       )}
     </div>
   );

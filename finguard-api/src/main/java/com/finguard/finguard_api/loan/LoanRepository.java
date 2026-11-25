@@ -45,6 +45,8 @@ public interface LoanRepository extends JpaRepository<LoanApplication, Long> {
 
     long countBySubmittedById(Long submittedById);
 
+    List<LoanApplication> findByReviewedByIdOrderByCreatedAtDesc(Long reviewedById);
+
     @Modifying
     @Query("UPDATE LoanApplication l SET l.reviewedBy = null WHERE l.reviewedBy.id = :userId")
     void clearReviewedByUserId(@Param("userId") Long userId);

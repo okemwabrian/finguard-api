@@ -9,6 +9,7 @@ import CreditAnalystPanel from '../components/CreditAnalystPanel';
 import AuditorPanel from '../components/AuditorPanel';
 import AnalyticsPanel from '../components/AnalyticsPanel';
 import RepaymentsPanel from '../components/RepaymentsPanel';
+import InterestCalculator from '../components/InterestCalculator';
 import ProfilePage from './ProfilePage';
 import api from '../api/axios';
 
@@ -48,7 +49,9 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-24 md:py-8 space-y-6">
         {/* Top KPI Metrics Cards */}
-        {activeTab !== 'profile' && <KpiSummaryCards stats={stats} loading={statsLoading} />}
+        {activeTab !== 'profile' && activeTab !== 'calculator' && (
+          <KpiSummaryCards stats={stats} loading={statsLoading} />
+        )}
 
         {/* Risk Distribution Meter & Insights (shown on primary workflow tabs) */}
         {(activeTab === 'loans' || activeTab === 'queue' || activeTab === 'staff') && (
@@ -58,7 +61,8 @@ export default function Dashboard() {
         {/* Dynamic Workflow Panels */}
         {activeTab === 'analytics' && <AnalyticsPanel />}
         {activeTab === 'repayments' && <RepaymentsPanel />}
-        {activeTab === 'staff' && <AdminPanel />}
+        {activeTab === 'calculator' && <InterestCalculator embedded />}
+        {activeTab === 'staff' && <AdminPanel onDataChanged={fetchStats} />}
         {activeTab === 'audit' && <AuditorPanel />}
         {activeTab === 'loans' && <LoanOfficerPanel onLoanSubmitted={fetchStats} />}
         {activeTab === 'queue' && <CreditAnalystPanel onDecisionMade={fetchStats} />}

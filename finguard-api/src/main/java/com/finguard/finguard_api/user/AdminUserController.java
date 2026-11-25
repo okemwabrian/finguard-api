@@ -1,10 +1,16 @@
 package com.finguard.finguard_api.user;
 
+import com.finguard.finguard_api.audit.AuditLogRepository;
 import com.finguard.finguard_api.audit.AuditLogService;
 import com.finguard.finguard_api.config.CacheConfig;
+import com.finguard.finguard_api.document.DocumentResponse;
 import com.finguard.finguard_api.document.LoanDocumentRepository;
+import com.finguard.finguard_api.loan.LoanApplication;
 import com.finguard.finguard_api.loan.LoanRepository;
+import com.finguard.finguard_api.loan.dto.LoanResponse;
 import com.finguard.finguard_api.notification.NotificationRepository;
+import com.finguard.finguard_api.repayment.InstallmentRepository;
+import com.finguard.finguard_api.repayment.RepaymentScheduleRepository;
 import com.finguard.finguard_api.user.dto.CreateUserRequest;
 import com.finguard.finguard_api.user.dto.UpdateUserRequest;
 import com.finguard.finguard_api.user.dto.UpdateUserStatusRequest;
@@ -13,6 +19,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,9 +41,12 @@ public class AdminUserController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+    private final AuditLogRepository auditLogRepository;
     private final NotificationRepository notificationRepository;
     private final LoanRepository loanRepository;
     private final LoanDocumentRepository loanDocumentRepository;
+    private final InstallmentRepository installmentRepository;
+    private final RepaymentScheduleRepository repaymentScheduleRepository;
 
     @PostMapping
     @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
@@ -128,9 +139,51 @@ public class AdminUserController {
         return ResponseEntity.ok(UserResponse.from(saved));
     }
 
+    @GetMapping("/{id}/activity")
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> getUserActivity(@PathVariable Long id) {
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+        List<LoanResponse> submittedLoans = loanRepository
+                .findByBorrowerIdOrSubmittedByIdOrderByCreatedAtDesc(id, id, Pageable.unpaged())
+                .getContent()
+                .stream()
+                .map(LoanResponse::from)
+                .toList();
+
+        List<LoanResponse> reviewedLoans = loanRepository
+                .findByReviewedByIdOrderByCreatedAtDesc(id)
+                .stream()
+                .map(LoanResponse::from)
+                .toList();
+
+        List<DocumentResponse> documents = loanDocumentRepository
+                .findByUploadedByIdOrderByCreatedDateDesc(id)
+                .stream()
+                .map(DocumentResponse::from)
+                .toList();
+
+        var auditLogs = auditLogRepository.findTop30ByPerformedByEmailOrderByTimestampDesc(target.getEmail());
+
+        return ResponseEntity.ok(Map.of(
+                "user", UserResponse.from(target),
+                "submittedLoans", submittedLoans,
+                "reviewedLoans", reviewedLoans,
+                "documents", documents,
+                "auditLogs", auditLogs
+        ));
+    }
+
     @DeleteMapping("/{id}")
     @Transactional
-    @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_LOANS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_MY_LOANS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_LOAN_DETAILS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_LOAN_STATS, allEntries = true)
+    })
     public ResponseEntity<?> deleteUser(
             @PathVariable Long id,
             @AuthenticationPrincipal User admin
@@ -142,12 +195,17 @@ public class AdminUserController {
         User target = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
 
-        if (loanRepository.countBySubmittedById(id) > 0 || loanDocumentRepository.countByUploadedById(id) > 0) {
-            throw new IllegalStateException(
-                    "Cannot delete " + target.getEmail() + " because they have existing loan applications or uploaded documents. Suspend their account instead."
-            );
+        // Clean up loans submitted by this user (and their installments, schedules, documents)
+        List<LoanApplication> userLoans = loanRepository.findBySubmittedByIdOrderByCreatedAtDesc(id, Pageable.unpaged()).getContent();
+        for (LoanApplication loan : userLoans) {
+            installmentRepository.deleteByLoanApplicationId(loan.getId());
+            repaymentScheduleRepository.deleteByLoanApplicationId(loan.getId());
+            loanDocumentRepository.deleteByLoanApplicationId(loan.getId());
+            loanRepository.delete(loan);
         }
 
+        // Clean up remaining FKs referencing this user
+        loanDocumentRepository.deleteByUploadedById(id);
         notificationRepository.deleteByRecipientId(id);
         loanRepository.clearReviewedByUserId(id);
         loanRepository.clearBorrowerByUserId(id);
@@ -155,7 +213,7 @@ public class AdminUserController {
 
         userRepository.delete(target);
         auditLogService.record("USER_DELETED", "USER", id, admin,
-                "Deleted user account " + target.getEmail());
+                "Deleted user account " + target.getEmail() + " (and " + userLoans.size() + " linked loans)");
 
         return ResponseEntity.noContent().build();
     }
