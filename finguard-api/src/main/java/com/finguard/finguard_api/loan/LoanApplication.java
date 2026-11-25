@@ -50,7 +50,7 @@ public class LoanApplication {
     private BigDecimal interestRate = new BigDecimal("12.00");
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean delinquent = false;
 
     @Column(nullable = false, length = 500)

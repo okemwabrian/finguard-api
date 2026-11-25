@@ -32,7 +32,9 @@ export default function RepaymentsPanel() {
         api.get('/api/loans/delinquent'),
       ]);
       setLoans(loansRes.data.content || []);
-      setDelinquentLoans(delinqRes.data || []);
+      setDelinquentLoans(
+        Array.isArray(delinqRes.data) ? delinqRes.data : (delinqRes.data?.content || [])
+      );
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load repayments');
     } finally {
