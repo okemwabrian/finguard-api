@@ -37,22 +37,22 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast, removeToast }}>
       {children}
       {/* Snackbar / Toast Container */}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+      <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 max-w-sm w-auto min-w-[260px] pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-lg backdrop-blur-md text-xs font-medium transition-all animate-in fade-in slide-in-from-top-2 ${
+            className={`pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-xl backdrop-blur-md text-xs font-medium transition-all ${
               styles[t.type] || styles.info
             }`}
           >
-            <div className="mt-0.5">{icons[t.type] || icons.info}</div>
-            <div className="flex-1 leading-relaxed">{t.message}</div>
+            <div>{icons[t.type] || icons.info}</div>
+            <div className="flex-1 leading-snug">{t.message}</div>
             <button
               onClick={() => removeToast(t.id)}
-              className="opacity-60 hover:opacity-100 transition cursor-pointer"
+              className="opacity-60 hover:opacity-100 transition cursor-pointer shrink-0"
               aria-label="Close notification"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         ))}

@@ -19,7 +19,8 @@ export default function RepaymentsPanel() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentRef, setPaymentRef] = useState('');
+  const [installmentNumber, setInstallmentNumber] = useState('');
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('M-PESA');
   const [submittingPayment, setSubmittingPayment] = useState(false);
 
@@ -57,14 +58,15 @@ export default function RepaymentsPanel() {
     try {
       await api.post(`/api/loans/${selectedLoan.id}/payments`, {
         amount: Number(paymentAmount),
-        paymentReference: paymentRef || `STAFF-${Date.now()}`,
-        paymentMethod,
+        installmentNumber: installmentNumber ? Number(installmentNumber) : null,
+        paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+        method: paymentMethod,
       });
       setSuccess(`Recorded payment of KES ${Number(paymentAmount).toLocaleString()} for Loan #${selectedLoan.id}`);
       setShowPaymentModal(false);
       setSelectedLoan(null);
       setPaymentAmount('');
-      setPaymentRef('');
+      setInstallmentNumber('');
       fetchData();
     } catch (err) {
       const errCode = err.response?.data?.errorCode;
@@ -263,14 +265,24 @@ export default function RepaymentsPanel() {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Payment Reference / Cheque #
+                  Installment # (Optional — auto-picks next due if blank)
                 </label>
                 <input
-                  type="text"
-                  required
-                  value={paymentRef}
-                  onChange={(e) => setPaymentRef(e.target.value)}
-                  placeholder="e.g. QK8912JKL4"
+                  type="number"
+                  min="1"
+                  value={installmentNumber}
+                  onChange={(e) => setInstallmentNumber(e.target.value)}
+                  placeholder="Auto-select next unpaid installment"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Payment Date</label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
                 />
               </div>

@@ -39,6 +39,15 @@ public class LoanApplication {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal requestedAmount;
 
+    @Column(precision = 15, scale = 2)
+    private BigDecimal approvedAmount;
+
+    @Builder.Default
+    @Column(precision = 15, scale = 2, columnDefinition = "numeric(15,2) default 0.00")
+    private BigDecimal disbursedAmount = BigDecimal.ZERO;
+
+    private LocalDateTime disbursedAt;
+
     @Column(nullable = false)
     private Integer repaymentMonths;
 

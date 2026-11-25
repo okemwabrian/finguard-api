@@ -22,7 +22,7 @@ public class LoanRepaymentController {
     private final RepaymentScheduleService repaymentScheduleService;
 
     @PostMapping("/api/loans/{id}/payments")
-    @PreAuthorize("hasAnyRole('CREDIT_ANALYST', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CREDIT_ANALYST', 'ADMIN', 'LOAN_OFFICER', 'USER', 'BORROWER')")
     public ResponseEntity<InstallmentResponse> recordPayment(
             @PathVariable Long id,
             @Valid @RequestBody RecordPaymentRequest request,

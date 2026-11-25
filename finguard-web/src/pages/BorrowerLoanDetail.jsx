@@ -28,8 +28,9 @@ export default function BorrowerLoanDetail() {
 
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedInstallment, setSelectedInstallment] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentRef, setPaymentRef] = useState('');
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('M-PESA');
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState('');
@@ -83,8 +84,9 @@ export default function BorrowerLoanDetail() {
     try {
       await api.post(`/api/loans/${id}/payments`, {
         amount: Number(paymentAmount),
-        paymentReference: paymentRef || `MANUAL-${Date.now()}`,
-        paymentMethod,
+        installmentNumber: selectedInstallment?.installmentNumber || null,
+        paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+        method: paymentMethod,
       });
       setPaymentSuccess('Payment recorded successfully!');
       setShowPaymentModal(false);
@@ -331,9 +333,19 @@ export default function BorrowerLoanDetail() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
               <div>
-                <span className="text-slate-400">Principal</span>
-                <div className="text-base font-bold text-indigo-700">
-                  KES {Number(loan.requestedAmount).toLocaleString()}
+                <span className="text-slate-400">Requested</span>
+                <div className="text-base font-bold text-slate-900">
+                  KES {Number(loan.requestedAmount || 0).toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <span className="text-slate-400">Approved</span>
+                <div className="text-base font-bold text-emerald-600">
+                  {loan.approvedAmount
+                    ? `KES ${Number(loan.approvedAmount).toLocaleString()}`
+                    : isApproved
+                    ? `KES ${Number(loan.requestedAmount || 0).toLocaleString()}`
+                    : 'Pending'}
                 </div>
               </div>
               <div>
@@ -344,11 +356,32 @@ export default function BorrowerLoanDetail() {
                 <span className="text-slate-400">Interest Rate</span>
                 <div className="text-base font-bold text-slate-800">{loan.interestRate || '12.00'}% p.a.</div>
               </div>
-              <div>
-                <span className="text-slate-400">Status</span>
-                <div className="text-base font-bold text-slate-800">{loan.status}</div>
-              </div>
             </div>
+
+            {isApproved && (
+              <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-emerald-900">Disbursement Progress</span>
+                  <span className="font-mono font-bold text-emerald-700">
+                    KES {Number(loan.disbursedAmount || 0).toLocaleString()} / KES{' '}
+                    {Number(loan.approvedAmount || loan.requestedAmount || 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-emerald-200 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-600 transition-all duration-300"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        ((Number(loan.disbursedAmount || 0) /
+                          Math.max(1, Number(loan.approvedAmount || loan.requestedAmount || 1))) *
+                          100)
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-4 text-xs">
               <div>
@@ -592,14 +625,12 @@ export default function BorrowerLoanDetail() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Transaction Reference / Receipt #
+                    Installment #{selectedInstallment?.installmentNumber || 'Next'} — Payment Date
                   </label>
                   <input
-                    type="text"
-                    required
-                    value={paymentRef}
-                    onChange={(e) => setPaymentRef(e.target.value)}
-                    placeholder="e.g. QK8912JKL4"
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
                   />
                 </div>

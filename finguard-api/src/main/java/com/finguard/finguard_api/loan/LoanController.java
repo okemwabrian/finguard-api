@@ -34,13 +34,28 @@ public class LoanController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('CREDIT_ANALYST')")
+    @PreAuthorize("hasAnyRole('CREDIT_ANALYST', 'ADMIN')")
     public ResponseEntity<LoanResponse> updateStatus(
             @PathVariable Long id,
             @Valid @RequestBody ReviewLoanRequest request,
             @AuthenticationPrincipal User currentUser
     ) {
         return ResponseEntity.ok(loanService.updateLoanStatus(id, request, currentUser));
+    }
+
+    public record DisburseLoanRequest(
+            @jakarta.validation.constraints.NotNull @jakarta.validation.constraints.DecimalMin("1.00") java.math.BigDecimal disbursedAmount,
+            String reference
+    ) {}
+
+    @PatchMapping("/{id}/disburse")
+    @PreAuthorize("hasAnyRole('CREDIT_ANALYST', 'ADMIN', 'LOAN_OFFICER')")
+    public ResponseEntity<LoanResponse> disburseLoan(
+            @PathVariable Long id,
+            @Valid @RequestBody DisburseLoanRequest request,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(loanService.disburseLoan(id, request.disbursedAmount(), request.reference(), currentUser));
     }
 
     @GetMapping("/my-submissions")

@@ -326,21 +326,40 @@ public class AnalyticsService {
                             List.of(new ChartSeries("Loans", List.of(low, med, high)))
                     )
             );
-        } else {
-            List<String> statuses = List.of("PENDING", "UNDER_REVIEW", "CORRECTION_REQUIRED", "APPROVED", "REJECTED");
-            List<Number> counts = statuses.stream()
-                    .map(s -> (Number) agg.statusCounts().getOrDefault(s, 0L))
-                    .toList();
+        } else if (q.contains("support") || q.contains("contact") || q.contains("help") || q.contains("team")) {
             return new AnalyticsAskResponse(
-                    "The platform has processed " + agg.totalLoans() + " total loans worth KES " + agg.totalVolume().toPlainString() + ".",
-                    new ChartSpec(
-                            "BAR",
-                            "Applications by Underwriting Status",
-                            statuses,
-                            List.of(new ChartSeries("Applications", counts))
-                    )
+                    "Our active FinGuard Support Team is available 24/7 via support@finguard.com or +254 700 123 456. You can also send a direct support ticket from the Support Desk panel on this page.",
+                    defaultStatusChart(agg)
+            );
+        } else if (q.contains("interest") || q.contains("daily") || q.contains("calculat") || q.contains("emi")) {
+            return new AnalyticsAskResponse(
+                    "FinGuard calculates daily interest as Principal × (Annual Rate / 100) / 365, and monthly installments using a reducing-balance formula (default 12% p.a.). Open the Calculator tab anytime to simulate exact daily accrual and monthly schedules.",
+                    defaultStatusChart(agg)
+            );
+        } else if (q.contains("apply") || q.contains("document") || q.contains("kyc") || q.contains("correct") || q.contains("edit")) {
+            return new AnalyticsAskResponse(
+                    "To apply, click 'Apply' in your portal and attach your National ID, Payslip, or Bank Statement (PDF/JPG/PNG up to 10MB). If an analyst requests a correction, you can edit and resubmit directly from your application detail page.",
+                    defaultStatusChart(agg)
+            );
+        } else {
+            return new AnalyticsAskResponse(
+                    "The portfolio currently tracks " + agg.totalLoans() + " loan applications totaling KES " + agg.totalVolume().toPlainString() + ". You can ask about approval rates, delinquency, risk tiers, daily interest, KYC documents, or contact our support team.",
+                    defaultStatusChart(agg)
             );
         }
+    }
+
+    private ChartSpec defaultStatusChart(PortfolioAggregates agg) {
+        List<String> statuses = List.of("PENDING", "UNDER_REVIEW", "CORRECTION_REQUIRED", "APPROVED", "REJECTED");
+        List<Number> counts = statuses.stream()
+                .map(s -> (Number) agg.statusCounts().getOrDefault(s, 0L))
+                .toList();
+        return new ChartSpec(
+                "BAR",
+                "Applications by Underwriting Status",
+                statuses,
+                List.of(new ChartSeries("Applications", counts))
+        );
     }
 
     public record PortfolioAggregates(

@@ -119,6 +119,13 @@ public class LoanService {
         loan.setReviewerNotes(request.reviewerNotes());
         loan.setReviewedBy(analyst);
 
+        if (request.newStatus() == LoanStatus.APPROVED) {
+            BigDecimal approvedAmt = request.approvedAmount() != null
+                    ? request.approvedAmount()
+                    : loan.getRequestedAmount();
+            loan.setApprovedAmount(approvedAmt);
+        }
+
         LoanApplication updated = loanRepository.save(loan);
 
         if (request.newStatus() == LoanStatus.APPROVED) {
@@ -153,6 +160,53 @@ public class LoanService {
         }
 
         return LoanResponse.from(updated);
+    }
+
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = CacheConfig.CACHE_LOANS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_MY_LOANS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_LOAN_DETAILS, allEntries = true),
+            @CacheEvict(value = CacheConfig.CACHE_LOAN_STATS, allEntries = true)
+    })
+    public LoanResponse disburseLoan(Long loanId, BigDecimal amount, String reference, User staff) {
+        LoanApplication loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanId));
+
+        if (loan.getStatus() != LoanStatus.APPROVED) {
+            throw new IllegalStateException("Only APPROVED loans can be disbursed.");
+        }
+
+        BigDecimal approved = loan.getApprovedAmount() != null ? loan.getApprovedAmount() : loan.getRequestedAmount();
+        BigDecimal currentDisbursed = loan.getDisbursedAmount() != null ? loan.getDisbursedAmount() : BigDecimal.ZERO;
+        BigDecimal nextDisbursed = currentDisbursed.add(amount);
+
+        if (nextDisbursed.compareTo(approved) > 0) {
+            throw new IllegalStateException("Disbursement total (" + nextDisbursed + ") cannot exceed approved amount (" + approved + ").");
+        }
+
+        loan.setDisbursedAmount(nextDisbursed);
+        loan.setDisbursedAt(java.time.LocalDateTime.now());
+        LoanApplication saved = loanRepository.save(loan);
+
+        auditLogService.record(
+                "LOAN_DISBURSED",
+                "LOAN_APPLICATION",
+                saved.getId(),
+                staff,
+                "Disbursed KES " + amount + " (Total disbursed: KES " + nextDisbursed + " / " + approved + "). Ref: " + (reference != null ? reference : "N/A")
+        );
+
+        User borrowerRecipient = saved.getBorrower() != null ? saved.getBorrower() : saved.getSubmittedBy();
+        notificationService.sendNotification(
+                borrowerRecipient,
+                NotificationType.LOAN_STATUS_CHANGED,
+                "Loan Funds Disbursed (#" + saved.getId() + ")",
+                "KES " + amount + " has been disbursed for your loan #" + saved.getId() + ". Total disbursed: KES " + nextDisbursed + " of KES " + approved + ".",
+                saved.getId()
+        );
+
+        return LoanResponse.from(saved);
     }
 
     @Transactional

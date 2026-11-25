@@ -45,7 +45,9 @@ public class RepaymentScheduleService {
                     scheduleRepository.delete(existing);
                 });
 
-        BigDecimal principal = loan.getRequestedAmount();
+        BigDecimal principal = loan.getApprovedAmount() != null
+                ? loan.getApprovedAmount()
+                : loan.getRequestedAmount();
         int term = loan.getTermMonths() != null ? loan.getTermMonths() : loan.getRepaymentMonths();
         BigDecimal annualRate = loan.getInterestRate() != null ? loan.getInterestRate() : new BigDecimal("12.00");
 
@@ -126,8 +128,25 @@ public class RepaymentScheduleService {
         LoanApplication loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + loanId));
 
-        Installment installment = installmentRepository.findByScheduleLoanApplicationIdAndInstallmentNumber(loanId, request.installmentNumber())
-                .orElseThrow(() -> new IllegalArgumentException("Installment #" + request.installmentNumber() + " not found for loan: " + loanId));
+        if (actor.getRole() == Role.BORROWER || actor.getRole() == Role.USER) {
+            boolean ownsLoan = (loan.getBorrower() != null && loan.getBorrower().getId().equals(actor.getId()))
+                    || loan.getSubmittedBy().getId().equals(actor.getId());
+            if (!ownsLoan) {
+                throw new AccessDeniedException("Access denied: You do not own this loan.");
+            }
+        }
+
+        Installment installment;
+        if (request.installmentNumber() != null) {
+            installment = installmentRepository.findByScheduleLoanApplicationIdAndInstallmentNumber(loanId, request.installmentNumber())
+                    .orElseThrow(() -> new IllegalArgumentException("Installment #" + request.installmentNumber() + " not found for loan: " + loanId));
+        } else {
+            installment = installmentRepository.findByScheduleLoanApplicationIdOrderByInstallmentNumberAsc(loanId)
+                    .stream()
+                    .filter(i -> i.getStatus() != InstallmentStatus.PAID)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("All installments for loan #" + loanId + " are already paid."));
+        }
 
         if (installment.getStatus() == InstallmentStatus.PAID) {
             throw new IllegalStateException("Installment #" + request.installmentNumber() + " is already marked as PAID.");

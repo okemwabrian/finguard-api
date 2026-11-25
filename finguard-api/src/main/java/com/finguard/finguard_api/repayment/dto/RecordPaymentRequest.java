@@ -9,7 +9,7 @@ import java.time.LocalDate;
 
 public record RecordPaymentRequest(
         @NotNull @DecimalMin("1.00") BigDecimal amount,
-        @NotNull @Min(1) Integer installmentNumber,
+        @Min(1) Integer installmentNumber,
         LocalDate paymentDate,
         String method
 ) {}

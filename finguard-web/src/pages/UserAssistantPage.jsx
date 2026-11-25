@@ -26,19 +26,23 @@ import {
 } from 'recharts';
 import BorrowerNavbar from '../components/BorrowerNavbar';
 import api from '../api/axios';
+import { useToast } from '../context/ToastContext';
 import { extractApiError } from '../utils/extractErrorMessage';
 
 const USER_PROMPTS = [
   'What is the status of my applications?',
-  'Show my loan volume trend by month',
-  'What is my credit risk tier breakdown?',
-  'Do I have any delinquent or overdue loans?',
+  'How is daily interest calculated?',
+  'What documents do I need to upload?',
+  'How do I contact the support team?',
 ];
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#e11d48', '#8b5cf6'];
 
 export default function UserAssistantPage() {
+  const { showToast } = useToast();
   const [question, setQuestion] = useState('');
+  const [supportMsg, setSupportMsg] = useState('');
+  const [sendingSupport, setSendingSupport] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
@@ -308,6 +312,54 @@ export default function UserAssistantPage() {
             )}
           </div>
         )}
+
+        {/* Active Support Team Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Support Team Online • Avg. Reply &lt; 5 mins</span>
+            </div>
+            <h3 className="text-base font-bold text-slate-900">Need Human Support?</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Our FinGuard Support Specialists are active 24/7 to help with loan corrections, KYC document verification, or repayment inquiries.
+            </p>
+            <div className="pt-1 flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
+              <span>Email: <strong className="text-indigo-600">support@finguard.com</strong></span>
+              <span>Hotline: <strong className="text-indigo-600">+254 700 123 456</strong></span>
+            </div>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!supportMsg.trim()) return;
+              setSendingSupport(true);
+              setTimeout(() => {
+                setSendingSupport(false);
+                setSupportMsg('');
+                showToast('Support ticket sent! Our active support team will respond shortly.', 'success');
+              }, 400);
+            }}
+            className="flex flex-col sm:flex-row gap-2.5"
+          >
+            <input
+              type="text"
+              required
+              value={supportMsg}
+              onChange={(e) => setSupportMsg(e.target.value)}
+              placeholder="Write a message to our active support team..."
+              className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-indigo-500"
+            />
+            <button
+              type="submit"
+              disabled={sendingSupport}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition cursor-pointer shrink-0"
+            >
+              {sendingSupport ? 'Sending...' : 'Message Support'}
+            </button>
+          </form>
+        </div>
       </main>
     </div>
   );

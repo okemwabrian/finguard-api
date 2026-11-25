@@ -20,8 +20,9 @@ export default function BorrowerRepayments() {
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLoanId, setSelectedLoanId] = useState(null);
+  const [selectedInstallmentNumber, setSelectedInstallmentNumber] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentRef, setPaymentRef] = useState('');
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [paymentMethod, setPaymentMethod] = useState('M-PESA');
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState('');
@@ -82,8 +83,9 @@ export default function BorrowerRepayments() {
     try {
       await api.post(`/api/loans/${selectedLoanId}/payments`, {
         amount: Number(paymentAmount),
-        paymentReference: paymentRef || `MPESA-${Date.now()}`,
-        paymentMethod,
+        installmentNumber: selectedInstallmentNumber ? Number(selectedInstallmentNumber) : null,
+        paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+        method: paymentMethod,
       });
       setPaymentSuccess('Payment recorded successfully!');
       setShowPaymentModal(false);
@@ -142,6 +144,7 @@ export default function BorrowerRepayments() {
             <button
               onClick={() => {
                 setSelectedLoanId(nextLoan.id);
+                setSelectedInstallmentNumber(nextInstallment.installmentNumber);
                 setPaymentAmount(nextInstallment.installmentAmount);
                 setShowPaymentModal(true);
               }}
@@ -204,9 +207,11 @@ export default function BorrowerRepayments() {
 
                   <button
                     onClick={() => {
+                      const nextUnpaid = sched?.installments?.find((i) => i.status !== 'PAID');
                       setSelectedLoanId(loan.id);
+                      setSelectedInstallmentNumber(nextUnpaid?.installmentNumber || null);
                       setPaymentAmount(
-                        sched?.installments?.[0]?.installmentAmount || '1000'
+                        nextUnpaid?.installmentAmount || sched?.installments?.[0]?.installmentAmount || '1000'
                       );
                       setShowPaymentModal(true);
                     }}
@@ -315,14 +320,24 @@ export default function BorrowerRepayments() {
 
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    Transaction Reference / Receipt #
+                    Installment # (Auto-selected)
                   </label>
                   <input
-                    type="text"
-                    required
-                    value={paymentRef}
-                    onChange={(e) => setPaymentRef(e.target.value)}
-                    placeholder="e.g. QK8912JKL4"
+                    type="number"
+                    min="1"
+                    value={selectedInstallmentNumber || ''}
+                    onChange={(e) => setSelectedInstallmentNumber(e.target.value)}
+                    placeholder="Auto-select next unpaid installment"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Payment Date</label>
+                  <input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
                   />
                 </div>

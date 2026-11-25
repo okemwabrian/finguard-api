@@ -41,8 +41,16 @@ export default function BorrowerLoanApply() {
   const [borrowerNationalId, setBorrowerNationalId] = useState(user?.nationalId || '');
   const [borrowerPhone, setBorrowerPhone] = useState(user?.phone || '');
 
+  // Step 2: Financial Details
+  const [monthlyIncome, setMonthlyIncome] = useState('');
+  const [existingMonthlyDebt, setExistingMonthlyDebt] = useState('0');
+  const [autoFilledDebt, setAutoFilledDebt] = useState(0);
+  const [requestedAmount, setRequestedAmount] = useState('');
+  const [repaymentMonths, setRepaymentMonths] = useState(12);
+  const [purpose, setPurpose] = useState('');
+
   useEffect(() => {
-    const syncProfile = async () => {
+    const syncProfileAndDebt = async () => {
       try {
         const { data } = await api.get('/api/users/me');
         if (data.fullName) setBorrowerName((prev) => prev || data.fullName);
@@ -51,16 +59,37 @@ export default function BorrowerLoanApply() {
       } catch {
         // Ignore if offline
       }
-    };
-    syncProfile();
-  }, []);
 
-  // Step 2: Financial Details
-  const [monthlyIncome, setMonthlyIncome] = useState('');
-  const [existingMonthlyDebt, setExistingMonthlyDebt] = useState('');
-  const [requestedAmount, setRequestedAmount] = useState('');
-  const [repaymentMonths, setRepaymentMonths] = useState(12);
-  const [purpose, setPurpose] = useState('');
+      try {
+        const { data: loansPage } = await api.get('/api/borrower/loans?page=0&size=20');
+        const approved = (loansPage.content || []).filter((l) => l.status === 'APPROVED');
+        let totalExistingMonthly = 0;
+        for (const l of approved) {
+          try {
+            const { data: sched } = await api.get(`/api/borrower/loans/${l.id}/schedule`);
+            if (sched?.installments?.length > 0) {
+              const unpaid = sched.installments.some((i) => i.status !== 'PAID');
+              if (unpaid) {
+                totalExistingMonthly += Number(sched.installments[0].installmentAmount || 0);
+              }
+            }
+          } catch {
+            const amt = Number(l.approvedAmount || l.requestedAmount || 0);
+            const term = Number(l.repaymentMonths || 12);
+            if (term > 0) totalExistingMonthly += Math.round(amt / term);
+          }
+        }
+        if (totalExistingMonthly > 0) {
+          const rounded = Math.round(totalExistingMonthly);
+          setAutoFilledDebt(rounded);
+          setExistingMonthlyDebt(String(rounded));
+        }
+      } catch {
+        // Ignore
+      }
+    };
+    syncProfileAndDebt();
+  }, []);
 
   // Step 3: KYC Documents Staging
   const [files, setFiles] = useState([]); // array of { file, docType }
@@ -288,7 +317,14 @@ export default function BorrowerLoanApply() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Existing Monthly Debt (KES)</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Existing Monthly Debt (KES)
+                    {autoFilledDebt > 0 && (
+                      <span className="ml-1.5 text-[10px] font-semibold text-indigo-600">
+                        (Auto-filled from active loan: KES {autoFilledDebt.toLocaleString()})
+                      </span>
+                    )}
+                  </label>
                   <div className="relative">
                     <DollarSign className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                     <input

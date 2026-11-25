@@ -32,7 +32,14 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [notesByLoan, setNotesByLoan] = useState({});
+  const [approvedAmountByLoan, setApprovedAmountByLoan] = useState({});
   const [processingId, setProcessingId] = useState(null);
+
+  // Disbursement modal state
+  const [disburseLoan, setDisburseLoan] = useState(null);
+  const [disburseAmount, setDisburseAmount] = useState('');
+  const [disburseRef, setDisburseRef] = useState('');
+  const [disbursing, setDisbursing] = useState(false);
 
   // Documents state by loanId
   const [documentsByLoan, setDocumentsByLoan] = useState({});
@@ -138,10 +145,14 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
 
     setProcessingId(loanId);
     try {
-      await api.patch(`/api/loans/${loanId}/status`, {
+      const payload = {
         newStatus,
         reviewerNotes: notes || 'Claimed for underwriting review.',
-      });
+      };
+      if (newStatus === 'APPROVED' && approvedAmountByLoan[loanId]) {
+        payload.approvedAmount = Number(approvedAmountByLoan[loanId]);
+      }
+      await api.patch(`/api/loans/${loanId}/status`, payload);
       setSuccess(`Loan #${loanId} updated to ${newStatus}.`);
       setNotesByLoan((prev) => ({ ...prev, [loanId]: '' }));
       fetchLoans(page, statusFilter);
@@ -154,6 +165,32 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
       setError(errCode ? `[${errCode}] ${errMsg}` : errMsg);
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const handleRecordDisbursement = async (e) => {
+    e.preventDefault();
+    if (!disburseLoan) return;
+    setDisbursing(true);
+    setError('');
+    setSuccess('');
+    try {
+      await api.patch(`/api/loans/${disburseLoan.id}/disburse`, {
+        disbursedAmount: Number(disburseAmount),
+        reference: disburseRef || `DISB-${Date.now()}`,
+      });
+      setSuccess(`Disbursed KES ${Number(disburseAmount).toLocaleString()} for Loan #${disburseLoan.id}.`);
+      setDisburseLoan(null);
+      setDisburseAmount('');
+      setDisburseRef('');
+      fetchLoans(page, statusFilter);
+      if (onDecisionMade) onDecisionMade();
+    } catch (err) {
+      const errCode = err.response?.data?.errorCode;
+      const errMsg = err.response?.data?.message || err.response?.data?.error || 'Disbursement failed.';
+      setError(errCode ? `[${errCode}] ${errMsg}` : errMsg);
+    } finally {
+      setDisbursing(false);
     }
   };
 
@@ -415,15 +452,36 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
                     )}
 
                     {loan.status === 'UNDER_REVIEW' && (
-                      <div className="flex flex-col sm:flex-row gap-3 pt-1">
-                        <input
-                          type="text"
-                          placeholder="Enter underwriting decision notes..."
-                          value={notesByLoan[loan.id] || ''}
-                          onChange={(e) => setNotesByLoan((prev) => ({ ...prev, [loan.id]: e.target.value }))}
-                          className="flex-1 px-3.5 py-2 bg-slate-50/80 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
-                        />
-                        <div className="flex flex-wrap gap-2">
+                      <div className="space-y-3 pt-1">
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <div className="sm:w-48">
+                            <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                              Approved Amount (KES)
+                            </label>
+                            <input
+                              type="number"
+                              min="100"
+                              value={approvedAmountByLoan[loan.id] ?? loan.requestedAmount}
+                              onChange={(e) =>
+                                setApprovedAmountByLoan((prev) => ({ ...prev, [loan.id]: e.target.value }))
+                              }
+                              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-900 focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                              Decision / Correction Notes
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Enter underwriting decision or correction notes..."
+                              value={notesByLoan[loan.id] || ''}
+                              onChange={(e) => setNotesByLoan((prev) => ({ ...prev, [loan.id]: e.target.value }))}
+                              className="w-full px-3.5 py-2 bg-slate-50/80 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-indigo-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-2">
                           <button
                             disabled={processingId === loan.id}
                             onClick={() => handleTransition(loan.id, 'APPROVED')}
@@ -452,6 +510,56 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
                       </div>
                     )}
                   </>
+                )}
+
+                {loan.status === 'APPROVED' && (
+                  <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex-1 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-emerald-900">
+                          Approved: KES {Number(loan.approvedAmount || loan.requestedAmount || 0).toLocaleString()}
+                        </span>
+                        <span className="font-mono font-semibold text-emerald-700">
+                          Disbursed: KES {Number(loan.disbursedAmount || 0).toLocaleString()} (
+                          {Math.round(
+                            (Number(loan.disbursedAmount || 0) /
+                              Math.max(1, Number(loan.approvedAmount || loan.requestedAmount || 1))) *
+                              100
+                          )}
+                          %)
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-emerald-200 overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-600 transition-all duration-300"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              (Number(loan.disbursedAmount || 0) /
+                                Math.max(1, Number(loan.approvedAmount || loan.requestedAmount || 1))) *
+                                100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {Number(loan.disbursedAmount || 0) <
+                      Number(loan.approvedAmount || loan.requestedAmount || 0) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const remaining =
+                            Number(loan.approvedAmount || loan.requestedAmount || 0) -
+                            Number(loan.disbursedAmount || 0);
+                          setDisburseLoan(loan);
+                          setDisburseAmount(String(remaining));
+                        }}
+                        className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition cursor-pointer shrink-0"
+                      >
+                        Record Disbursement
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 {(loan.status === 'APPROVED' || loan.status === 'REJECTED') && loan.reviewerNotes && (
@@ -493,6 +601,65 @@ export default function CreditAnalystPanel({ onDecisionMade }) {
           doc={previewDoc.doc}
           onClose={() => setPreviewDoc(null)}
         />
+      )}
+
+      {disburseLoan && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <form
+            onSubmit={handleRecordDisbursement}
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-xs"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">
+                Record Disbursement — Loan #{disburseLoan.id}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDisburseLoan(null)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Disbursement Amount (KES)</label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={disburseAmount}
+                onChange={(e) => setDisburseAmount(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Transfer Reference</label>
+              <input
+                type="text"
+                value={disburseRef}
+                onChange={(e) => setDisburseRef(e.target.value)}
+                placeholder="e.g. RTGS-998877"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900"
+              />
+            </div>
+            <div className="pt-2 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDisburseLoan(null)}
+                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={disbursing}
+                className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer disabled:opacity-50"
+              >
+                {disbursing ? 'Disbursing...' : 'Confirm Disbursement'}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </div>
   );

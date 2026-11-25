@@ -19,45 +19,48 @@ export default function KpiSummaryCards({ stats, loading }) {
 
   if (!stats) return null;
 
+  const safeNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  const rawVol = stats.totalVolumeKes ?? stats.totalVolume ?? 0;
+
   const cards = [
     {
       title: isBorrower ? 'Your Loan Volume' : 'Total Portfolio Volume',
-      value: `KES ${Number(stats.totalVolumeKes || 0).toLocaleString('en-KE', {
+      value: `KES ${safeNum(rawVol).toLocaleString('en-KE', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       })}`,
-      subtext: `${stats.totalLoansCount || 0} total applications`,
+      subtext: `${safeNum(stats.totalLoansCount ?? stats.totalLoans)} total applications`,
       icon: Landmark,
       color: 'indigo',
       iconBg: 'bg-indigo-50 border-indigo-200 text-indigo-600',
     },
     {
       title: 'Pending Underwriting',
-      value: stats.pendingCount + stats.underReviewCount,
-      subtext: `${stats.pendingCount} pending • ${stats.underReviewCount} under review`,
+      value: safeNum(stats.pendingCount) + safeNum(stats.underReviewCount),
+      subtext: `${safeNum(stats.pendingCount)} pending • ${safeNum(stats.underReviewCount)} under review`,
       icon: Clock,
       color: 'amber',
       iconBg: 'bg-amber-50 border-amber-200 text-amber-600',
-      badge: stats.pendingCount > 0 ? `${stats.pendingCount} new` : null,
+      badge: safeNum(stats.pendingCount) > 0 ? `${safeNum(stats.pendingCount)} new` : null,
       badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     },
     {
       title: 'Approval Rate',
-      value: `${stats.approvalRate || 0}%`,
-      subtext: `${stats.approvedCount} approved • ${stats.rejectedCount} rejected`,
+      value: `${safeNum(stats.approvalRate)}%`,
+      subtext: `${safeNum(stats.approvedCount)} approved • ${safeNum(stats.rejectedCount)} rejected`,
       icon: CheckCircle2,
       color: 'emerald',
       iconBg: 'bg-emerald-50 border-emerald-200 text-emerald-600',
     },
     {
       title: 'High-Risk Alerts',
-      value: stats.highRiskCount || 0,
-      subtext: `${stats.highRiskPercentage || 0}% of scored portfolio`,
+      value: safeNum(stats.highRiskCount),
+      subtext: `${safeNum(stats.highRiskPercentage)}% of scored portfolio`,
       icon: ShieldAlert,
       color: 'rose',
       iconBg: 'bg-rose-50 border-rose-200 text-rose-600',
-      badge: stats.highRiskCount > 0 ? 'Review Needed' : 'Safe',
-      badgeColor: stats.highRiskCount > 0
+      badge: safeNum(stats.highRiskCount) > 0 ? 'Review Needed' : 'Safe',
+      badgeColor: safeNum(stats.highRiskCount) > 0
         ? 'bg-rose-100 text-rose-800 border-rose-200'
         : 'bg-slate-100 text-slate-700 border-slate-200',
     },
