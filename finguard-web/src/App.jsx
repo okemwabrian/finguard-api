@@ -10,6 +10,8 @@ import BorrowerDashboard from './pages/BorrowerDashboard';
 import BorrowerLoanApply from './pages/BorrowerLoanApply';
 import BorrowerLoanDetail from './pages/BorrowerLoanDetail';
 import BorrowerRepayments from './pages/BorrowerRepayments';
+import UserAssistantPage from './pages/UserAssistantPage';
+import ProfilePage from './pages/ProfilePage';
 
 function StaffRoute({ children }) {
   const { user } = useAuth();
@@ -84,6 +86,22 @@ export default function App() {
               element={
                 <BorrowerRoute>
                   <BorrowerRepayments />
+                </BorrowerRoute>
+              }
+            />
+            <Route
+              path="/portal/assistant"
+              element={
+                <BorrowerRoute>
+                  <UserAssistantPage />
+                </BorrowerRoute>
+              }
+            />
+            <Route
+              path="/portal/profile"
+              element={
+                <BorrowerRoute>
+                  <ProfilePage />
                 </BorrowerRoute>
               }
             />

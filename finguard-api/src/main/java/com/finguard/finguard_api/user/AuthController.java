@@ -58,7 +58,9 @@ public class AuthController {
                 user.getEmail(),
                 user.getFullName(),
                 user.getRole(),
-                user.isMustChangePassword()
+                user.isMustChangePassword(),
+                user.getPhone(),
+                user.getNationalId()
         ));
     }
 

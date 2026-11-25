@@ -113,7 +113,7 @@ export default function LoanOfficerPanel({ onLoanSubmitted }) {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2 pr-6">
             <div className="flex items-center gap-2 text-indigo-900 font-semibold text-sm">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Gemini AI Credit Risk Assessment — {latestResult.borrowerName}</span>
+              <span>FinGuard Credit Risk Assessment — {latestResult.borrowerName}</span>
             </div>
             <RiskBadge level={latestResult.aiRiskLevel} score={latestResult.aiRiskScore} />
           </div>
@@ -232,7 +232,7 @@ export default function LoanOfficerPanel({ onLoanSubmitted }) {
                     New Loan Application
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Submit borrower financials for automated Gemini AI credit evaluation
+                    Submit borrower financials for automated credit evaluation
                   </p>
                 </div>
               </div>
@@ -368,7 +368,7 @@ export default function LoanOfficerPanel({ onLoanSubmitted }) {
                   className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg text-sm transition cursor-pointer flex items-center gap-2"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>{submitting ? 'Scoring with Gemini AI...' : 'Submit & Score Loan'}</span>
+                  <span>{submitting ? 'Scoring Application...' : 'Submit & Score Loan'}</span>
                 </button>
               </div>
             </form>

@@ -98,7 +98,7 @@ class ReportsExportServiceTest {
         );
 
         String output = writer.toString();
-        assertThat(output).contains("FINGUARD AI - PORTFOLIO SUMMARY REPORT");
+        assertThat(output).contains("FINGUARD - PORTFOLIO SUMMARY REPORT");
         assertThat(output).contains("Total Origination Volume (KES)");
         assertThat(output).contains("Jane Doe");
         assertThat(output).contains("ID-992211");

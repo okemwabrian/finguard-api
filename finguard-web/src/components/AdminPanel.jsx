@@ -12,15 +12,18 @@ import {
   EyeOff,
   Download,
   FileSpreadsheet,
-  FileText
+  FileText,
+  KeyRound
 } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { TableRowSkeleton } from './SkeletonLoader';
+import { extractApiError } from '../utils/extractErrorMessage';
 
 export default function AdminPanel() {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -107,6 +110,21 @@ export default function AdminPanel() {
       fetchUsers();
     } catch (err) {
       setError(err.response?.data?.message || 'Cannot delete user (may have linked loan records).');
+    }
+  };
+
+  const handleResetPassword = async (staff) => {
+    if (!window.confirm(`Reset password for ${staff.email} to default temporary password (FinGuard@2026)?`)) return;
+    setError('');
+    setSuccess('');
+    try {
+      const { data } = await api.post(`/api/admin/users/${staff.id}/reset-password`);
+      setSuccess(
+        `Password for ${staff.email} reset to default: "${data.defaultPassword}". They will be prompted to change it on next login.`
+      );
+      fetchUsers();
+    } catch (err) {
+      setError(extractApiError(err, 'Failed to reset password.'));
     }
   };
 
@@ -280,20 +298,37 @@ export default function AdminPanel() {
 
       {/* User Directory Table */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-600" />
-            <h2 className="text-base font-semibold text-slate-900">User & Staff Directory</h2>
+            <h2 className="text-base font-semibold text-slate-900">All System Users & Roles</h2>
+            <span className="text-xs font-medium text-slate-500">({users.length} total)</span>
           </div>
-          <span className="text-xs font-medium text-slate-500">{users.length} accounts</span>
+
+          <div className="flex flex-wrap gap-1.5">
+            {['ALL', 'USER', 'BORROWER', 'LOAN_OFFICER', 'CREDIT_ANALYST', 'AUDITOR', 'ADMIN'].map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRoleFilter(r)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition cursor-pointer ${
+                  roleFilter === r
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
               <tr>
-                <th className="px-6 py-3">Name</th>
-                <th className="px-6 py-3">Email</th>
+                <th className="px-6 py-3">Name & Contact</th>
+                <th className="px-6 py-3">National ID</th>
                 <th className="px-6 py-3">Role</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3 text-right">Actions</th>
@@ -308,10 +343,19 @@ export default function AdminPanel() {
                   <TableRowSkeleton cols={5} />
                 </>
               ) : (
-                users.map((staff) => (
+                users
+                  .filter((u) => roleFilter === 'ALL' || u.role === roleFilter)
+                  .map((staff) => (
                   <tr key={staff.id} className="hover:bg-slate-50/80">
-                    <td className="px-6 py-3.5 font-medium text-slate-900">{staff.fullName}</td>
-                    <td className="px-6 py-3.5 text-slate-600">{staff.email}</td>
+                    <td className="px-6 py-3.5">
+                      <div className="font-medium text-slate-900">{staff.fullName}</div>
+                      <div className="text-xs text-slate-500">
+                        {staff.email}{staff.phone ? ` • ${staff.phone}` : ''}
+                      </div>
+                    </td>
+                    <td className="px-6 py-3.5 text-xs text-slate-600">
+                      {staff.nationalId || '—'}
+                    </td>
                     <td className="px-6 py-3.5">
                       <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
                         {staff.role}
@@ -326,13 +370,21 @@ export default function AdminPanel() {
                     </td>
                     <td className="px-6 py-3.5 text-right">
                       {staff.email !== currentUser?.email ? (
-                        <div className="inline-flex items-center gap-2">
+                        <div className="inline-flex items-center gap-1.5">
                           <button
                             onClick={() => setEditingUser({ ...staff })}
-                            title="Edit"
+                            title="Edit User"
                             className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition cursor-pointer"
                           >
                             <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleResetPassword(staff)}
+                            title="Reset Password to Default (FinGuard@2026)"
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 transition cursor-pointer"
+                          >
+                            <KeyRound className="w-3.5 h-3.5" />
+                            <span className="hidden lg:inline">Reset Pass</span>
                           </button>
                           <button
                             onClick={() => toggleStatus(staff)}

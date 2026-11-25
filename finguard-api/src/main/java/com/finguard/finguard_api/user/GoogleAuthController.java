@@ -78,12 +78,14 @@ public class GoogleAuthController {
             }
 
             String jwt = jwtService.generateToken(user);
-            return ResponseEntity.ok(Map.of(
-                    "token", jwt,
-                    "email", user.getEmail(),
-                    "fullName", user.getFullName(),
-                    "role", user.getRole().name(),
-                    "mustChangePassword", user.isMustChangePassword()
+            return ResponseEntity.ok(new com.finguard.finguard_api.user.dto.LoginResponse(
+                    jwt,
+                    user.getEmail(),
+                    user.getFullName(),
+                    user.getRole(),
+                    user.isMustChangePassword(),
+                    user.getPhone(),
+                    user.getNationalId()
             ));
         } catch (Exception ex) {
             log.warn("Google authentication failed: {}", ex.getMessage());

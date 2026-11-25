@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/analytics")
-@PreAuthorize("hasAnyRole('ADMIN', 'CREDIT_ANALYST', 'LOAN_OFFICER', 'AUDITOR')")
+@PreAuthorize("hasAnyRole('ADMIN', 'CREDIT_ANALYST', 'LOAN_OFFICER', 'AUDITOR', 'USER', 'BORROWER')")
 @RequiredArgsConstructor
 public class AnalyticsController {
 

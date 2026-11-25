@@ -7,7 +7,7 @@ export default function AuthLayout({ title, subtitle, children }) {
   const features = [
     {
       icon: Sparkles,
-      title: 'Gemini AI Credit Risk Scoring',
+      title: 'Automated Credit Risk Scoring',
       desc: 'Automated 0–100 risk grading with deterministic Debt-to-Income fallback.',
       accent: 'bg-amber-50 text-amber-600 border-amber-200',
     },
@@ -40,7 +40,7 @@ export default function AuthLayout({ title, subtitle, children }) {
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-slate-900 block">FinGuard AI</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900 block">FinGuard</span>
               <span className="text-xs text-slate-500">Intelligent Loan Origination & Risk Platform</span>
             </div>
           </Link>
@@ -93,7 +93,7 @@ export default function AuthLayout({ title, subtitle, children }) {
 
         <div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-200/80 pt-5">
           <span>256-bit JWT Security • BCrypt-12</span>
-          <span>© {CURRENT_YEAR} FinGuard AI</span>
+          <span>© {CURRENT_YEAR} FinGuard</span>
         </div>
       </div>
 
@@ -105,7 +105,7 @@ export default function AuthLayout({ title, subtitle, children }) {
               <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 via-rose-500 to-amber-500 text-white">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <span className="text-lg font-bold text-slate-900 tracking-tight">FinGuard AI</span>
+              <span className="text-lg font-bold text-slate-900 tracking-tight">FinGuard</span>
             </Link>
             <Link to="/" className="text-xs font-semibold text-blue-600">Home</Link>
           </div>

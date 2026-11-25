@@ -9,7 +9,7 @@ export default function LandingPage() {
     {
       icon: Sparkles,
       title: 'Instant AI Credit Scoring',
-      desc: 'Every loan application is evaluated by Gemini AI with a deterministic Debt-to-Income fallback for 100% uptime.',
+      desc: 'Every loan application is evaluated by our FinGuard Risk Engine with a deterministic Debt-to-Income model for 100% uptime.',
       badge: 'AI Engine',
       color: 'bg-amber-50 text-amber-700 border-amber-200',
     },
@@ -43,7 +43,7 @@ export default function LandingPage() {
             <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 via-rose-500 to-amber-500 text-white shadow-sm">
               <ShieldCheck className="w-5 h-5" />
             </div>
-            <span className="font-bold text-lg tracking-tight text-slate-900">FinGuard AI</span>
+            <span className="font-bold text-lg tracking-tight text-slate-900">FinGuard</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -92,7 +92,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
-            Apply for personal or business financing in minutes. FinGuard AI pairs real-time Gemini credit risk scoring with transparent human underwriting and instant digital receipts.
+            Apply for personal or business financing in minutes. FinGuard pairs real-time credit risk scoring with transparent human underwriting and instant digital receipts.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">

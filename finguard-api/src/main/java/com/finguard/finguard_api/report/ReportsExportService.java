@@ -110,7 +110,7 @@ public class ReportsExportService {
     public void writePortfolioCsv(PrintWriter writer, List<LoanApplication> loans, BigDecimal totalVolume, long totalCount, double approvalRate, long lowRisk, long medRisk, long highRisk) throws IOException {
         CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT);
 
-        csvPrinter.printRecord("FINGUARD AI - PORTFOLIO SUMMARY REPORT");
+        csvPrinter.printRecord("FINGUARD - PORTFOLIO SUMMARY REPORT");
         csvPrinter.printRecord("Generated At", LocalDateTime.now().format(DISPLAY_FORMAT));
         csvPrinter.printRecord("Total Origination Volume (KES)", totalVolume);
         csvPrinter.printRecord("Total Applications", totalCount);

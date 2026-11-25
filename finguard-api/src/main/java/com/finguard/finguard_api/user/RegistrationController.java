@@ -29,18 +29,18 @@ public class RegistrationController {
                     .body(Map.of("error", "An account with this email already exists."));
         }
 
-        User borrower = User.builder()
+        User newUser = User.builder()
                 .fullName(request.fullName())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .role(Role.BORROWER)
+                .role(Role.USER)
                 .phone(request.phone())
                 .nationalId(request.nationalId())
                 .mustChangePassword(false)
                 .active(true)
                 .build();
 
-        User saved = userRepository.save(borrower);
+        User saved = userRepository.save(newUser);
         String token = jwtService.generateToken(saved);
 
         auditLogService.record(
@@ -48,7 +48,7 @@ public class RegistrationController {
                 "USER",
                 saved.getId(),
                 saved,
-                "Borrower registered: " + saved.getEmail()
+                "User registered: " + saved.getEmail()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(

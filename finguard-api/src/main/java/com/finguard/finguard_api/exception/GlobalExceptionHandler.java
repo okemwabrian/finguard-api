@@ -21,14 +21,20 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
+        StringBuilder details = new StringBuilder();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             errors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            if (!details.isEmpty()) details.append("; ");
+            details.append(fieldError.getField()).append(": ").append(fieldError.getDefaultMessage());
         }
+        String message = details.isEmpty()
+                ? "Please verify your inputs and correct the highlighted fields."
+                : "Validation failed — " + details;
         return ResponseEntity.badRequest().body(
                 ApiErrorResponse.ofValidation(
                         400,
                         "VALIDATION_FAILED",
-                        "Please verify your inputs and correct the highlighted fields.",
+                        message,
                         errors
                 )
         );

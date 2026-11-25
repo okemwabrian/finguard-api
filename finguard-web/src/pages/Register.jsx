@@ -37,8 +37,8 @@ export default function Register() {
 
   return (
     <AuthLayout
-      title="Create borrower account"
-      subtitle="Apply for loans and receive instant AI credit scoring"
+      title="Create your account"
+      subtitle="Apply for loans and track your applications in real time"
     >
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2">
@@ -137,7 +137,7 @@ export default function Register() {
           disabled={loading}
           className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-lg text-sm shadow-sm transition cursor-pointer"
         >
-          {loading ? 'Creating Account...' : 'Create Borrower Account'}
+          {loading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
 

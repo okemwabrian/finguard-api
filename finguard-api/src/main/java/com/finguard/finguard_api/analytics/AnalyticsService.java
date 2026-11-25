@@ -4,11 +4,13 @@ import com.finguard.finguard_api.analytics.dto.AnalyticsAskResponse;
 import com.finguard.finguard_api.analytics.dto.ChartSeries;
 import com.finguard.finguard_api.analytics.dto.ChartSpec;
 import com.finguard.finguard_api.audit.AuditLogService;
+import com.finguard.finguard_api.loan.LoanApplication;
 import com.finguard.finguard_api.loan.LoanRepository;
-import com.finguard.finguard_api.loan.LoanStatus;
+import com.finguard.finguard_api.user.Role;
 import com.finguard.finguard_api.user.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -60,11 +62,14 @@ public class AnalyticsService {
     public AnalyticsAskResponse ask(String question, User user) {
         checkRateLimit(user.getId());
 
-        PortfolioAggregates aggregates = computeAggregates();
+        boolean isPersonalUser = user.getRole() == Role.USER || user.getRole() == Role.BORROWER;
+        PortfolioAggregates aggregates = isPersonalUser
+                ? computeUserAggregates(user.getId())
+                : computeAggregates();
 
         String systemPrompt = """
-                You are FinGuard AI's senior portfolio analytics engine.
-                Analyze the portfolio aggregates and answer the staff member's query.
+                You are FinGuard's senior portfolio analytics engine.
+                Analyze the portfolio aggregates and answer the user's query.
                 Return ONLY a JSON object with:
                 - "answer": concise analysis (2-3 sentences max) answering the question directly.
                 - "chart": { "type": "BAR" | "LINE" | "PIE", "title": string, "labels": [string], "series": [ { "name": string, "data": [number] } ] }
@@ -206,6 +211,54 @@ public class AnalyticsService {
                 delinquentCount,
                 monthlyMap,
                 riskStatusBuilder.toString()
+        );
+    }
+
+    public PortfolioAggregates computeUserAggregates(Long userId) {
+        List<LoanApplication> userLoans = loanRepository
+                .findByBorrowerIdOrSubmittedByIdOrderByCreatedAtDesc(userId, userId, Pageable.unpaged())
+                .getContent();
+
+        BigDecimal totalVolume = BigDecimal.ZERO;
+        Map<String, Long> statusMap = new LinkedHashMap<>();
+        Map<String, Long> riskMap = new LinkedHashMap<>();
+        Map<String, Integer> monthlyCount = new LinkedHashMap<>();
+        Map<String, BigDecimal> monthlyVol = new LinkedHashMap<>();
+        long delinquentCount = 0;
+
+        for (LoanApplication loan : userLoans) {
+            if (loan.getRequestedAmount() != null) {
+                totalVolume = totalVolume.add(loan.getRequestedAmount());
+            }
+            String st = loan.getStatus() != null ? loan.getStatus().name() : "UNKNOWN";
+            statusMap.merge(st, 1L, Long::sum);
+
+            if (loan.getAiRiskLevel() != null) {
+                riskMap.merge(loan.getAiRiskLevel(), 1L, Long::sum);
+            }
+            if (loan.isDelinquent()) {
+                delinquentCount++;
+            }
+            if (loan.getCreatedAt() != null) {
+                String ym = String.format("%d-%02d", loan.getCreatedAt().getYear(), loan.getCreatedAt().getMonthValue());
+                monthlyCount.merge(ym, 1, Integer::sum);
+                monthlyVol.merge(ym, loan.getRequestedAmount() != null ? loan.getRequestedAmount() : BigDecimal.ZERO, BigDecimal::add);
+            }
+        }
+
+        Map<String, String> monthlyMap = new LinkedHashMap<>();
+        for (String ym : monthlyCount.keySet()) {
+            monthlyMap.put(ym, monthlyCount.get(ym) + " loans (KES " + monthlyVol.get(ym) + ")");
+        }
+
+        return new PortfolioAggregates(
+                totalVolume,
+                userLoans.size(),
+                statusMap,
+                riskMap,
+                delinquentCount,
+                monthlyMap,
+                ""
         );
     }
 

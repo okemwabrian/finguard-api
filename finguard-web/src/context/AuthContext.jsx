@@ -15,11 +15,25 @@ export function AuthProvider({ children }) {
       email: data.email,
       fullName: data.fullName,
       role: data.role,
+      phone: data.phone || '',
+      nationalId: data.nationalId || '',
       mustChangePassword: data.mustChangePassword,
     };
     localStorage.setItem('finguard_user', JSON.stringify(userData));
     setUser(userData);
     return userData;
+  };
+
+  const updateUserProfile = (profileData) => {
+    const updated = {
+      ...user,
+      fullName: profileData.fullName ?? user?.fullName,
+      phone: profileData.phone ?? user?.phone ?? '',
+      nationalId: profileData.nationalId ?? user?.nationalId ?? '',
+    };
+    localStorage.setItem('finguard_user', JSON.stringify(updated));
+    setUser(updated);
+    return updated;
   };
 
   const login = async (email, password) => {
@@ -51,7 +65,9 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, loginWithGoogle, completePasswordChange, logout }}>
+    <AuthContext.Provider
+      value={{ user, login, register, loginWithGoogle, completePasswordChange, updateUserProfile, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

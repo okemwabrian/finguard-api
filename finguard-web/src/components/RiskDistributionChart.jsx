@@ -29,7 +29,7 @@ export default function RiskDistributionChart({ stats, loading }) {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-900">
-              Gemini AI Credit Risk Distribution
+              FinGuard Credit Risk Distribution
             </h3>
             <p className="text-xs text-slate-500">
               Automated underwriting risk distribution across evaluated loans
@@ -45,7 +45,7 @@ export default function RiskDistributionChart({ stats, loading }) {
       {/* Visual Stacked Distribution Bar */}
       {totalScored === 0 ? (
         <div className="py-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg bg-slate-50/50">
-          No loan applications evaluated by Gemini AI yet.
+          No loan applications evaluated by FinGuard yet.
         </div>
       ) : (
         <div className="space-y-2">

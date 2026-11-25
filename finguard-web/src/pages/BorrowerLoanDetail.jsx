@@ -368,7 +368,7 @@ export default function BorrowerLoanDetail() {
             <div>
               <div className="flex items-center gap-1.5 text-indigo-300 text-[11px] font-semibold uppercase tracking-wider">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Gemini Underwriting</span>
+                <span>FinGuard Risk Engine</span>
               </div>
               <div className="mt-2 text-2xl font-bold">
                 {loan.aiRiskScore !== null && loan.aiRiskScore !== undefined ? `${loan.aiRiskScore}/100` : 'Evaluating'}

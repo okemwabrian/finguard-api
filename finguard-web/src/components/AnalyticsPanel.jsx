@@ -128,7 +128,7 @@ export default function AnalyticsPanel() {
             <Sparkles className="w-4 h-4" />
             <span>Generative Portfolio Intelligence</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold">FinGuard AI Chart Assistant</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">FinGuard Chart Assistant</h2>
           <p className="text-slate-300 text-xs mt-1 max-w-xl">
             Ask plain-English questions about loan origination, approval rates, delinquency, and credit risk tiers to generate instant executive charts.
           </p>

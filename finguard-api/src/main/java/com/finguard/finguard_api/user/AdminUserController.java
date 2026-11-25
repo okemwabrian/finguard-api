@@ -140,4 +140,38 @@ public class AdminUserController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/reset-password")
+    @CacheEvict(value = CacheConfig.CACHE_ADMIN_USERS, allEntries = true)
+    public ResponseEntity<Map<String, String>> resetPasswordToDefault(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body,
+            @AuthenticationPrincipal User admin
+    ) {
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+        String defaultPassword = (body != null && body.get("defaultPassword") != null && !body.get("defaultPassword").isBlank())
+                ? body.get("defaultPassword").trim()
+                : "FinGuard@2026";
+
+        target.setPassword(passwordEncoder.encode(defaultPassword));
+        target.setMustChangePassword(true);
+        target.setFailedLoginAttempts(0);
+        target.setActive(true);
+        userRepository.save(target);
+
+        auditLogService.record(
+                "USER_PASSWORD_RESET",
+                "USER",
+                target.getId(),
+                admin,
+                "Reset password to default temporary password for " + target.getEmail()
+        );
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Password reset to default for " + target.getEmail(),
+                "defaultPassword", defaultPassword
+        ));
+    }
 }

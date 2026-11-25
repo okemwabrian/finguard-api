@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -13,11 +13,13 @@ import {
   ArrowLeft,
   Sparkles,
   FileCheck,
-  X
+  X,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import BorrowerNavbar from '../components/BorrowerNavbar';
 import api from '../api/axios';
+import { extractApiError } from '../utils/extractErrorMessage';
 
 const STEPS = [
   { id: 1, name: 'Personal Details' },
@@ -34,10 +36,24 @@ export default function BorrowerLoanApply() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Step 1: Personal Details
+  // Step 1: Personal Details (auto-filled from user profile)
   const [borrowerName, setBorrowerName] = useState(user?.fullName || '');
-  const [borrowerNationalId, setBorrowerNationalId] = useState('');
-  const [borrowerPhone, setBorrowerPhone] = useState('');
+  const [borrowerNationalId, setBorrowerNationalId] = useState(user?.nationalId || '');
+  const [borrowerPhone, setBorrowerPhone] = useState(user?.phone || '');
+
+  useEffect(() => {
+    const syncProfile = async () => {
+      try {
+        const { data } = await api.get('/api/users/me');
+        if (data.fullName) setBorrowerName((prev) => prev || data.fullName);
+        if (data.nationalId) setBorrowerNationalId((prev) => prev || data.nationalId);
+        if (data.phone) setBorrowerPhone((prev) => prev || data.phone);
+      } catch {
+        // Ignore if offline
+      }
+    };
+    syncProfile();
+  }, []);
 
   // Step 2: Financial Details
   const [monthlyIncome, setMonthlyIncome] = useState('');
@@ -108,11 +124,7 @@ export default function BorrowerLoanApply() {
 
       navigate(`/portal/loans/${loan.id}`);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        'Failed to submit loan application. Please check your inputs.'
-      );
+      setError(extractApiError(err, 'Failed to submit loan application. Please check your inputs.'));
     } finally {
       setLoading(false);
     }
@@ -178,6 +190,19 @@ export default function BorrowerLoanApply() {
               </div>
 
               <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Account Email (Auto-filled)</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                    <input
+                      type="email"
+                      disabled
+                      value={user?.email || ''}
+                      className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 text-sm cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Full Legal Name</label>
                   <div className="relative">
@@ -347,7 +372,7 @@ export default function BorrowerLoanApply() {
                     />
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    FinGuard AI evaluates applications with DTI below 35% with preferential interest rates.
+                    FinGuard evaluates applications with DTI below 35% with preferential interest rates.
                   </p>
                 </div>
               )}
@@ -466,7 +491,7 @@ export default function BorrowerLoanApply() {
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Review & Submit Loan Application</h2>
-                <p className="text-xs text-slate-500">Confirm your details before triggering the real-time Gemini AI underwriting engine</p>
+                <p className="text-xs text-slate-500">Confirm your details before submitting for automated underwriting review</p>
               </div>
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
@@ -516,11 +541,11 @@ export default function BorrowerLoanApply() {
                 </div>
               </div>
 
-              {/* Gemini AI Notice */}
+              {/* Automated Credit Assessment Notice */}
               <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
                 <div className="text-xs text-indigo-900">
-                  <span className="font-bold">Instant AI Credit Assessment:</span> Upon submission, Google Gemini AI will analyze your financial ratios and assign an objective 0–100 risk score and tier.
+                  <span className="font-bold">Instant Credit Assessment:</span> Upon submission, FinGuard will evaluate your financial ratios and assign an objective 0–100 risk score and tier.
                 </div>
               </div>
 
@@ -533,7 +558,7 @@ export default function BorrowerLoanApply() {
                   className="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
                 <span>
-                  I certify that all provided financial and identity information is truthful and accurate, and authorize FinGuard AI to evaluate my application under banking credit standards.
+                  I certify that all provided financial and identity information is truthful and accurate, and authorize FinGuard to evaluate my application under banking credit standards.
                 </span>
               </label>
 
@@ -553,7 +578,7 @@ export default function BorrowerLoanApply() {
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold shadow-xs transition"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>{loading ? 'Evaluating with Gemini AI...' : 'Submit Application'}</span>
+                  <span>{loading ? 'Submitting Application...' : 'Submit Application'}</span>
                 </button>
               </div>
             </div>

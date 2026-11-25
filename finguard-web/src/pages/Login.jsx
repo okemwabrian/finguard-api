@@ -37,7 +37,7 @@ export default function Login() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Sign in to access your FinGuard AI portal"
+      subtitle="Sign in to access your FinGuard portal"
     >
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2">

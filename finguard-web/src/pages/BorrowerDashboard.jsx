@@ -60,7 +60,7 @@ export default function BorrowerDashboard() {
             </div>
             <h1 className="text-2xl font-bold">Welcome back, {user?.fullName}!</h1>
             <p className="text-slate-300 text-sm mt-1 max-w-xl">
-              Apply for personal and business financing with real-time Gemini AI risk scoring and transparent repayment tracking.
+              Apply for personal and business financing with real-time credit risk scoring and transparent repayment tracking.
             </p>
           </div>
 

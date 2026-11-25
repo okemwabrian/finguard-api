@@ -7,7 +7,7 @@ export function generateLoanReceipt(loan) {
     <!DOCTYPE html>
     <html>
       <head>
-        <title>FinGuard AI Receipt - Loan #${loan.id}</title>
+        <title>FinGuard Receipt - Loan #${loan.id}</title>
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; color: #0f172a; padding: 32px; }
           .receipt { max-width: 680px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(15,23,42,0.06); }
@@ -32,7 +32,7 @@ export function generateLoanReceipt(loan) {
           <div class="topbar"></div>
           <div class="header">
             <div>
-              <div class="brand">FinGuard AI</div>
+              <div class="brand">FinGuard</div>
               <div class="sub">Official Loan Application & Underwriting Receipt</div>
             </div>
             <div class="badge">${loan.status}</div>
@@ -50,7 +50,7 @@ export function generateLoanReceipt(loan) {
             </div>
 
             <div class="ai-box">
-              <div class="ai-title">Gemini AI Risk Grade: ${loan.aiRiskLevel || 'N/A'} (${loan.aiRiskScore ?? '—'}/100)</div>
+              <div class="ai-title">FinGuard Risk Grade: ${loan.aiRiskLevel || 'N/A'} (${loan.aiRiskScore ?? '—'}/100)</div>
               <div class="ai-text">${loan.aiRecommendation || 'Pending AI evaluation.'}</div>
             </div>
 
@@ -63,7 +63,7 @@ export function generateLoanReceipt(loan) {
           </div>
           <div class="footer">
             <span>System-generated receipt • Tamper-evident audit logged</span>
-            <span>FinGuard AI Financial Services</span>
+            <span>FinGuard Financial Services</span>
           </div>
         </div>
         <script>window.onload = () => window.print();</script>

@@ -7,5 +7,11 @@ public record LoginResponse(
         String email,
         String fullName,
         Role role,
-        boolean mustChangePassword
-) {}
+        boolean mustChangePassword,
+        String phone,
+        String nationalId
+) {
+    public LoginResponse(String token, String email, String fullName, Role role, boolean mustChangePassword) {
+        this(token, email, fullName, role, mustChangePassword, null, null);
+    }
+}

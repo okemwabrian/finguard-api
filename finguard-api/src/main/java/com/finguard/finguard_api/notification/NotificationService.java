@@ -57,8 +57,8 @@ public class NotificationService {
         try {
             SimpleMailMessage mailMessage = new SimpleMailMessage();
             mailMessage.setTo(recipientEmail);
-            mailMessage.setSubject("FinGuard AI: " + subject);
-            mailMessage.setText(body + "\n\n— FinGuard AI Financial Services");
+            mailMessage.setSubject("FinGuard: " + subject);
+            mailMessage.setText(body + "\n\n— FinGuard Financial Services");
             mailSender.send(mailMessage);
             log.info("Sent email notification to {} for subject: {}", recipientEmail, subject);
         } catch (Exception ex) {
