@@ -92,7 +92,7 @@ export default function AuthLayout({ title, subtitle, children }) {
         </div>
 
         <div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-200/80 pt-5">
-          <span>256-bit JWT Security • BCrypt-12</span>
+          <span>Trusted Digital Lending</span>
           <span>© {CURRENT_YEAR} FinGuard</span>
         </div>
       </div>
